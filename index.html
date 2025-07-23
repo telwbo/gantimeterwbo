@@ -51,16 +51,15 @@
         <main>
             <!-- Kotak Pencarian -->
             <div class="max-w-2xl mx-auto mb-8">
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <!-- Ikon Pencarian SVG -->
-                        <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <div class="relative flex items-center">
+                    <input type="text" id="searchInput"
+                           class="w-full bg-gray-800 border-2 border-gray-700 rounded-full py-3 px-4 pr-12 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition duration-300 ease-in-out"
+                           placeholder="Ketik nama, ID, atau status untuk mencari...">
+                    <button id="searchButton" class="absolute right-0 mr-4 p-1 rounded-full hover:bg-gray-700 transition">
+                        <svg class="h-6 w-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
                         </svg>
-                    </div>
-                    <input type="text" id="searchInput"
-                           class="w-full bg-gray-800 border-2 border-gray-700 rounded-full py-3 pl-12 pr-4 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition duration-300 ease-in-out"
-                           placeholder="Ketik nama, ID, atau status untuk mencari...">
+                    </button>
                 </div>
             </div>
 
@@ -76,7 +75,7 @@
                 <!-- Pesan jika tidak ada hasil -->
                 <div id="no-results" class="hidden text-center py-16 px-6">
                     <div class="max-w-md mx-auto">
-                        <img src="https://placehold.co/400x300/1f2937/6b7280" alt="Robot sedih melihat layar kosong, menunjukkan tidak ada data yang ditemukan setelah pencarian." class="mx-auto h-32 w-auto opacity-50">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/41080720-8fc9-457d-bd29-bf72b330ce70.png" alt="Robot sedih melihat layar kosong, menunjukkan tidak ada data yang ditemukan setelah pencarian." class="mx-auto h-32 w-auto opacity-50">
                         <h3 class="mt-4 text-xl font-semibold text-white">Data Tidak Ditemukan</h3>
                         <p class="mt-2 text-gray-400">Kami tidak dapat menemukan data yang cocok dengan kata kunci pencarian Anda. Silakan coba kata kunci lain.</p>
                     </div>
@@ -167,11 +166,41 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Event listener untuk input pencarian
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-        const searchTerm = e.target.value;
-        const filteredData = filterData(searchTerm);
-        renderTable(filteredData);
+    // SVG untuk refresh
+    const refreshIcon = `<svg class="h-6 w-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+    </svg>`;
+
+    // Event listener untuk tombol pencarian
+    const searchButton = document.getElementById('searchButton');
+    const searchInput = document.getElementById('searchInput');
+    let isSearching = false;
+
+    searchButton.addEventListener('click', () => {
+        if (!isSearching) {
+            // Lakukan pencarian
+            const searchTerm = searchInput.value;
+            const filteredData = filterData(searchTerm);
+            renderTable(filteredData);
+            searchButton.innerHTML = refreshIcon;
+            isSearching = true;
+        } else {
+            // Reset pencarian
+            searchInput.value = '';
+            document.getElementById('table-container').classList.add('hidden');
+            document.getElementById('no-results').classList.add('hidden');
+            searchButton.innerHTML = `<svg class="h-6 w-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+            </svg>`;
+            isSearching = false;
+        }
+    });
+
+    // Event listener untuk input pencarian (enter key)
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            searchButton.click();
+        }
     });
 
 });
