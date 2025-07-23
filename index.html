@@ -32,6 +32,16 @@
             -webkit-background-clip: text;
             color: transparent;
         }
+        /* Efek heart berkedip merah */
+        .blinking-heart {
+            color: red;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
     </style>
     <!-- Impor font dari Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -85,7 +95,7 @@
         </main>
 
         <footer class="text-center mt-12 text-gray-500 text-sm">
-            <p>&copy; 2025 VKRN Data Checker. Dibuat dengan &hearts; oleh TE Wonosobo.</p>
+            <p>&copy; 2025 VKRN Data Checker. Dibuat dengan <span class="blinking-heart">&hearts;</span> oleh TE Wonosobo.</p>
         </footer>
     </div>
 
