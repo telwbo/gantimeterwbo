@@ -185,6 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderTable(filteredData);
             searchButton.innerHTML = refreshIcon;
             isSearching = true;
+            searchInput.blur(); // Tutup keyboard
         } else {
             // Reset pencarian
             searchInput.value = '';
@@ -202,6 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             searchButton.click();
+            searchInput.blur(); // Tutup keyboard setelah Enter
         }
     });
 
