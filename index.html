@@ -358,17 +358,17 @@
         }
 
         function loadSampleData() {
-            // Sample data with "id pel" column
-            csvHeaders = ['id', 'id pel', 'nama', 'kategori', 'status', 'tanggal', 'deskripsi', 'pic'];
+            // Sample data with "idpel" column
+            csvHeaders = ['id', 'idpel', 'nama', 'kategori', 'status', 'tanggal', 'deskripsi', 'pic'];
             csvData = [
-                {id: '1', 'id pel': 'P001', nama: 'Program Alpha', kategori: 'Pengembangan', status: 'Aktif', tanggal: '2024-01-15', deskripsi: 'Program pengembangan sistem informasi terintegrasi', pic: 'Ahmad Santoso'},
-                {id: '2', 'id pel': 'P002', nama: 'Project Beta', kategori: 'Penelitian', status: 'Selesai', tanggal: '2024-02-20', deskripsi: 'Penelitian teknologi AI dan machine learning', pic: 'Dr. Sari Indira'},
-                {id: '3', 'id pel': 'P003', nama: 'Inisiatif Gamma', kategori: 'Implementasi', status: 'Pending', tanggal: '2024-03-10', deskripsi: 'Implementasi sistem keamanan cyber', pic: 'Budi Prasetyo'},
-                {id: '4', 'id pel': 'P004', nama: 'Program Delta', kategori: 'Evaluasi', status: 'Aktif', tanggal: '2024-04-05', deskripsi: 'Evaluasi komprehensif sistem IT', pic: 'Lisa Maharani'},
-                {id: '5', 'id pel': 'P005', nama: 'Proyek Epsilon', kategori: 'Pengembangan', status: 'Draft', tanggal: '2024-05-12', deskripsi: 'Pengembangan aplikasi mobile', pic: 'Rahman Hidayat'},
-                {id: '6', 'id pel': 'P006', nama: 'System Zeta', kategori: 'Maintenance', status: 'Aktif', tanggal: '2024-06-18', deskripsi: 'Pemeliharaan sistem database', pic: 'Dewi Kusuma'},
-                {id: '7', 'id pel': 'P007', nama: 'Application Eta', kategori: 'Testing', status: 'Pending', tanggal: '2024-07-22', deskripsi: 'Pengujian aplikasi baru', pic: 'Tony Wijaya'},
-                {id: '8', 'id pel': 'P008', nama: 'Module Theta', kategori: 'Development', status: 'Selesai', tanggal: '2024-08-14', deskripsi: 'Pengembangan modul ERP', pic: 'Maya Sari'}
+                {id: '1', idpel: 'P001', nama: 'Program Alpha', kategori: 'Pengembangan', status: 'Aktif', tanggal: '2024-01-15', deskripsi: 'Program pengembangan sistem informasi terintegrasi', pic: 'Ahmad Santoso'},
+                {id: '2', idpel: 'P002', nama: 'Project Beta', kategori: 'Penelitian', status: 'Selesai', tanggal: '2024-02-20', deskripsi: 'Penelitian teknologi AI dan machine learning', pic: 'Dr. Sari Indira'},
+                {id: '3', idpel: 'P003', nama: 'Inisiatif Gamma', kategori: 'Implementasi', status: 'Pending', tanggal: '2024-03-10', deskripsi: 'Implementasi sistem keamanan cyber', pic: 'Budi Prasetyo'},
+                {id: '4', idpel: 'P004', nama: 'Program Delta', kategori: 'Evaluasi', status: 'Aktif', tanggal: '2024-04-05', deskripsi: 'Evaluasi komprehensif sistem IT', pic: 'Lisa Maharani'},
+                {id: '5', idpel: 'P005', nama: 'Proyek Epsilon', kategori: 'Pengembangan', status: 'Draft', tanggal: '2024-05-12', deskripsi: 'Pengembangan aplikasi mobile', pic: 'Rahman Hidayat'},
+                {id: '6', idpel: 'P006', nama: 'System Zeta', kategori: 'Maintenance', status: 'Aktif', tanggal: '2024-06-18', deskripsi: 'Pemeliharaan sistem database', pic: 'Dewi Kusuma'},
+                {id: '7', idpel: 'P007', nama: 'Application Eta', kategori: 'Testing', status: 'Pending', tanggal: '2024-07-22', deskripsi: 'Pengujian aplikasi baru', pic: 'Tony Wijaya'},
+                {id: '8', idpel: 'P008', nama: 'Module Theta', kategori: 'Development', status: 'Selesai', tanggal: '2024-08-14', deskripsi: 'Pengembangan modul ERP', pic: 'Maya Sari'}
             ];
         }
 
@@ -473,12 +473,12 @@
             detailHTML += `</div>`;
             
             // Add additional information if available
-            const idPel = item['id pel'] || item['id_pel'] || item['idpel'];
+            const idPel = item.idpel;
             if (idPel) {
                 detailHTML += `
                     <div style="margin-top: 20px; padding: 15px; background-color: #f0f9ff; border-radius: 4px; border: 1px solid #0ea5e9;">
                         <strong>Informasi PDF:</strong><br>
-                        File PDF untuk data ini kemungkinan tersedia dengan nama: <strong>${idPel}.pdf</strong> di folder pdf/
+                        File PDF untuk data ini akan dicari dengan nama: <strong>${idPel}.pdf</strong> di folder pdf/
                     </div>
                 `;
             }
@@ -510,21 +510,21 @@
             const pdfStatus = document.getElementById('pdfStatus');
             
             // Show loading
-            pdfStatus.innerHTML = '<div class="loading">Mencari file PDF...</div>';
+            pdfStatus.innerHTML = '<div class="loading">Mencari file PDF berdasarkan kolom idpel...</div>';
             pdfSection.classList.remove('hidden');
             pdfSection.scrollIntoView({ behavior: 'smooth' });
             
-            // Get all "id pel" values from search results
+            // Get all "idpel" values from search results
             const idPelList = [];
             currentSearchResults.forEach(item => {
-                const idPel = item['id pel'] || item['id_pel'] || item['idpel'];
+                const idPel = item.idpel;
                 if (idPel && !idPelList.includes(idPel)) {
                     idPelList.push(idPel);
                 }
             });
 
             if (idPelList.length === 0) {
-                pdfStatus.innerHTML = '<div class="error">Tidak ada ID Pel yang ditemukan dalam hasil pencarian.</div>';
+                pdfStatus.innerHTML = '<div class="error">Tidak ada kolom idpel yang ditemukan dalam hasil pencarian.</div>';
                 return;
             }
 
@@ -547,9 +547,7 @@
                                 filename: pdfFileName,
                                 idPel: idPel
                             };
-                            matchedItem = currentSearchResults.find(item => 
-                                (item['id pel'] || item['id_pel'] || item['idpel']) === idPel
-                            );
+                            matchedItem = currentSearchResults.find(item => item.idpel === idPel);
                             break;
                         }
                     } catch (error) {
@@ -565,18 +563,18 @@
                 // Display the found PDF
                 const programName = matchedItem ? (matchedItem.nama || matchedItem.name || foundPDF.idPel) : foundPDF.idPel;
                 
-                pdfStatus.innerHTML = `<div class="success">File PDF ditemukan: ${foundPDF.filename}</div>`;
+                pdfStatus.innerHTML = `<div class="success">File PDF ditemukan: ${foundPDF.filename} (berdasarkan idpel: ${foundPDF.idPel})</div>`;
                 
                 loadPDF(foundPDF.path, programName, foundPDF.idPel, foundPDF.filename);
             } else {
                 // No PDF found
-                let statusHTML = '<div class="error">Tidak ada file PDF yang ditemukan untuk ID Pel berikut:</div>';
+                let statusHTML = '<div class="error">Tidak ada file PDF yang ditemukan untuk idpel berikut:</div>';
                 statusHTML += '<ul>';
                 idPelList.forEach(idPel => {
                     statusHTML += `<li>${idPel}.pdf</li>`;
                 });
                 statusHTML += '</ul>';
-                statusHTML += '<p><small>Pastikan file PDF tersedia di folder "pdf/" dengan nama yang sesuai dengan ID Pel.</small></p>';
+                statusHTML += '<p><small>Pastikan file PDF tersedia di folder "pdf/" dengan nama yang sesuai dengan nilai kolom idpel.</small></p>';
                 
                 pdfStatus.innerHTML = statusHTML;
             }
