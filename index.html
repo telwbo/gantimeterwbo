@@ -157,6 +157,21 @@
             color: #666;
             margin-bottom: 10px;
         }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .error {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -177,14 +192,8 @@
                 <h3>Hasil Pencarian</h3>
                 <div class="table-container">
                     <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nama</th>
-                                <th>Kategori</th>
-                                <th>Status</th>
-                                <th>Tanggal</th>
-                            </tr>
+                        <thead id="tableHeader">
+                            <!-- Headers will be populated dynamically -->
                         </thead>
                         <tbody id="tableBody">
                         </tbody>
@@ -204,22 +213,8 @@
     </div>
 
     <script>
-        // Sample CSV data
-        let csvData = [
-            {id: 1, nama: "Program Alpha", kategori: "Pengembangan", status: "Aktif", tanggal: "2024-01-15"},
-            {id: 2, nama: "Project Beta", kategori: "Penelitian", status: "Selesai", tanggal: "2024-02-20"},
-            {id: 3, nama: "Inisiatif Gamma", kategori: "Implementasi", status: "Pending", tanggal: "2024-03-10"},
-            {id: 4, nama: "Program Delta", kategori: "Evaluasi", status: "Aktif", tanggal: "2024-04-05"},
-            {id: 5, nama: "Proyek Epsilon", kategori: "Pengembangan", status: "Draft", tanggal: "2024-05-12"},
-            {id: 6, nama: "System Zeta", kategori: "Maintenance", status: "Aktif", tanggal: "2024-06-18"},
-            {id: 7, nama: "Application Eta", kategori: "Testing", status: "Pending", tanggal: "2024-07-22"},
-            {id: 8, nama: "Module Theta", kategori: "Development", status: "Selesai", tanggal: "2024-08-14"},
-            {id: 9, nama: "System Iota", kategori: "Pengembangan", status: "Aktif", tanggal: "2024-09-05"},
-            {id: 10, nama: "Application Kappa", kategori: "Testing", status: "Draft", tanggal: "2024-10-12"},
-            {id: 11, nama: "Program Lambda", kategori: "Penelitian", status: "Pending", tanggal: "2024-11-18"},
-            {id: 12, nama: "Project Mu", kategori: "Implementasi", status: "Selesai", tanggal: "2024-12-22"}
-        ];
-
+        let csvData = [];
+        let csvHeaders = [];
         let currentSearchResults = [];
         let isSearchMode = true;
 
@@ -231,16 +226,78 @@
             }
         }
 
+        async function loadCSVFile() {
+            try {
+                const response = await fetch('vkrn.csv');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const csvText = await response.text();
+                parseCSV(csvText);
+            } catch (error) {
+                console.error('Error loading CSV file:', error);
+                showError('Error: File vkrn.csv tidak ditemukan. Menggunakan data sampel.');
+                // Fallback to sample data
+                loadSampleData();
+            }
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n');
+            if (lines.length === 0) {
+                showError('File CSV kosong');
+                return;
+            }
+
+            // Get headers from first line
+            csvHeaders = lines[0].split(',').map(header => header.trim().replace(/"/g, ''));
+            
+            // Parse data rows
+            csvData = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim()) {
+                    const values = lines[i].split(',').map(value => value.trim().replace(/"/g, ''));
+                    const item = {};
+                    csvHeaders.forEach((header, index) => {
+                        item[header] = values[index] || '';
+                    });
+                    csvData.push(item);
+                }
+            }
+
+            console.log('CSV loaded successfully:', csvData.length, 'records');
+        }
+
+        function loadSampleData() {
+            // Sample data as fallback
+            csvHeaders = ['id', 'nama', 'kategori', 'status', 'tanggal'];
+            csvData = [
+                {id: '1', nama: 'Program Alpha', kategori: 'Pengembangan', status: 'Aktif', tanggal: '2024-01-15'},
+                {id: '2', nama: 'Project Beta', kategori: 'Penelitian', status: 'Selesai', tanggal: '2024-02-20'},
+                {id: '3', nama: 'Inisiatif Gamma', kategori: 'Implementasi', status: 'Pending', tanggal: '2024-03-10'},
+                {id: '4', nama: 'Program Delta', kategori: 'Evaluasi', status: 'Aktif', tanggal: '2024-04-05'},
+                {id: '5', nama: 'Proyek Epsilon', kategori: 'Pengembangan', status: 'Draft', tanggal: '2024-05-12'},
+                {id: '6', nama: 'System Zeta', kategori: 'Maintenance', status: 'Aktif', tanggal: '2024-06-18'},
+                {id: '7', nama: 'Application Eta', kategori: 'Testing', status: 'Pending', tanggal: '2024-07-22'},
+                {id: '8', nama: 'Module Theta', kategori: 'Development', status: 'Selesai', tanggal: '2024-08-14'}
+            ];
+        }
+
         function searchData() {
+            if (csvData.length === 0) {
+                showError('Data CSV belum dimuat');
+                return;
+            }
+
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             let filteredData = csvData;
             
             if (searchTerm) {
-                filteredData = csvData.filter(item => 
-                    item.nama.toLowerCase().includes(searchTerm) ||
-                    item.kategori.toLowerCase().includes(searchTerm) ||
-                    item.status.toLowerCase().includes(searchTerm)
-                );
+                filteredData = csvData.filter(item => {
+                    return Object.values(item).some(value => 
+                        value.toString().toLowerCase().includes(searchTerm)
+                    );
+                });
             }
             
             currentSearchResults = filteredData;
@@ -255,22 +312,33 @@
 
         function displayResults(data) {
             const resultsDiv = document.getElementById('searchResults');
+            const tableHeader = document.getElementById('tableHeader');
             const tableBody = document.getElementById('tableBody');
             
+            // Clear previous results
+            tableHeader.innerHTML = '';
             tableBody.innerHTML = '';
             
             if (data.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Tidak ada data yang ditemukan</td></tr>';
+                tableBody.innerHTML = `<tr><td colspan="${csvHeaders.length}" style="text-align: center;">Tidak ada data yang ditemukan</td></tr>`;
             } else {
+                // Create table headers
+                const headerRow = document.createElement('tr');
+                csvHeaders.forEach(header => {
+                    const th = document.createElement('th');
+                    th.textContent = header.charAt(0).toUpperCase() + header.slice(1);
+                    headerRow.appendChild(th);
+                });
+                tableHeader.appendChild(headerRow);
+
+                // Create table rows
                 data.forEach(item => {
                     const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${item.id}</td>
-                        <td>${item.nama}</td>
-                        <td>${item.kategori}</td>
-                        <td>${item.status}</td>
-                        <td>${item.tanggal}</td>
-                    `;
+                    csvHeaders.forEach(header => {
+                        const td = document.createElement('td');
+                        td.textContent = item[header] || '';
+                        row.appendChild(td);
+                    });
                     tableBody.appendChild(row);
                 });
             }
@@ -301,12 +369,21 @@
             currentSearchResults.forEach(item => {
                 contentHTML += `
                     <div class="program-item">
-                        <div class="program-title">${item.nama}</div>
+                        <div class="program-title">${item.nama || item.name || 'Program Tidak Diketahui'}</div>
                         <div class="program-details">
-                            <strong>ID:</strong> ${item.id} | 
-                            <strong>Kategori:</strong> ${item.kategori} | 
-                            <strong>Status:</strong> ${item.status} | 
-                            <strong>Tanggal:</strong> ${item.tanggal}
+                `;
+                
+                // Display all fields from CSV
+                csvHeaders.forEach(header => {
+                    if (item[header]) {
+                        contentHTML += `<strong>${header.charAt(0).toUpperCase() + header.slice(1)}:</strong> ${item[header]} | `;
+                    }
+                });
+                
+                // Remove last " | "
+                contentHTML = contentHTML.slice(0, -3);
+                
+                contentHTML += `
                         </div>
                     </div>
                 `;
@@ -340,6 +417,19 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        function showError(message) {
+            const searchSection = document.querySelector('.search-section');
+            const existingError = searchSection.querySelector('.error');
+            if (existingError) {
+                existingError.remove();
+            }
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            searchSection.insertBefore(errorDiv, searchSection.children[1]);
+        }
+
         // Enter key search
         document.getElementById('searchInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
@@ -347,6 +437,11 @@
                     searchData();
                 }
             }
+        });
+
+        // Load CSV file when page loads
+        window.addEventListener('DOMContentLoaded', function() {
+            loadCSVFile();
         });
     </script>
 </body>
