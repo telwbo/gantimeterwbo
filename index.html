@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -197,6 +198,15 @@
         .pdf-list {
             margin: 20px 0;
         }
+
+        .pdf-not-found {
+            background-color: #fef3c7;
+            border: 1px solid #fbbf24;
+            color: #92400e;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -230,11 +240,7 @@
 
         <!-- PDF Section -->
         <div id="pdfSection" class="pdf-section hidden">
-            <h2>Program Report</h2>
-            <div id="programContent">
-                <!-- Content will be populated here -->
-            </div>
-            
+            <h2>Program PDF Files</h2>
             <div id="pdfList" class="pdf-list">
                 <!-- PDF links will be populated here -->
             </div>
@@ -306,17 +312,17 @@
         }
 
         function loadSampleData() {
-            // Sample data as fallback with pdf_file column
-            csvHeaders = ['id', 'nama', 'kategori', 'status', 'tanggal', 'pdf_file'];
+            // Sample data with "id pel" column
+            csvHeaders = ['id', 'id pel', 'nama', 'kategori', 'status', 'tanggal'];
             csvData = [
-                {id: '1', nama: 'Program Alpha', kategori: 'Pengembangan', status: 'Aktif', tanggal: '2024-01-15', pdf_file: 'program_alpha.pdf'},
-                {id: '2', nama: 'Project Beta', kategori: 'Penelitian', status: 'Selesai', tanggal: '2024-02-20', pdf_file: 'project_beta.pdf'},
-                {id: '3', nama: 'Inisiatif Gamma', kategori: 'Implementasi', status: 'Pending', tanggal: '2024-03-10', pdf_file: 'inisiatif_gamma.pdf'},
-                {id: '4', nama: 'Program Delta', kategori: 'Evaluasi', status: 'Aktif', tanggal: '2024-04-05', pdf_file: 'program_delta.pdf'},
-                {id: '5', nama: 'Proyek Epsilon', kategori: 'Pengembangan', status: 'Draft', tanggal: '2024-05-12', pdf_file: 'proyek_epsilon.pdf'},
-                {id: '6', nama: 'System Zeta', kategori: 'Maintenance', status: 'Aktif', tanggal: '2024-06-18', pdf_file: 'system_zeta.pdf'},
-                {id: '7', nama: 'Application Eta', kategori: 'Testing', status: 'Pending', tanggal: '2024-07-22', pdf_file: 'application_eta.pdf'},
-                {id: '8', nama: 'Module Theta', kategori: 'Development', status: 'Selesai', tanggal: '2024-08-14', pdf_file: 'module_theta.pdf'}
+                {id: '1', 'id pel': 'P001', nama: 'Program Alpha', kategori: 'Pengembangan', status: 'Aktif', tanggal: '2024-01-15'},
+                {id: '2', 'id pel': 'P002', nama: 'Project Beta', kategori: 'Penelitian', status: 'Selesai', tanggal: '2024-02-20'},
+                {id: '3', 'id pel': 'P003', nama: 'Inisiatif Gamma', kategori: 'Implementasi', status: 'Pending', tanggal: '2024-03-10'},
+                {id: '4', 'id pel': 'P004', nama: 'Program Delta', kategori: 'Evaluasi', status: 'Aktif', tanggal: '2024-04-05'},
+                {id: '5', 'id pel': 'P005', nama: 'Proyek Epsilon', kategori: 'Pengembangan', status: 'Draft', tanggal: '2024-05-12'},
+                {id: '6', 'id pel': 'P006', nama: 'System Zeta', kategori: 'Maintenance', status: 'Aktif', tanggal: '2024-06-18'},
+                {id: '7', 'id pel': 'P007', nama: 'Application Eta', kategori: 'Testing', status: 'Pending', tanggal: '2024-07-22'},
+                {id: '8', 'id pel': 'P008', nama: 'Module Theta', kategori: 'Development', status: 'Selesai', tanggal: '2024-08-14'}
             ];
         }
 
@@ -390,191 +396,93 @@
             }
 
             const pdfSection = document.getElementById('pdfSection');
-            const programContent = document.getElementById('programContent');
             const pdfList = document.getElementById('pdfList');
             
-            const searchTerm = document.getElementById('searchInput').value || 'Semua Data';
-            const currentDate = new Date().toLocaleDateString('id-ID');
-            
-            let contentHTML = `
-                <h3>Laporan Program VKRN</h3>
-                <p><strong>Tanggal:</strong> ${currentDate}</p>
-                <p><strong>Pencarian:</strong> ${searchTerm}</p>
-                <p><strong>Total Data:</strong> ${currentSearchResults.length} program</p>
-                <hr style="margin: 20px 0;">
-            `;
-            
-            // Collect PDF files from search results
-            let pdfFiles = [];
-            
+            // Get all unique "id pel" values from search results
+            const idPelList = [];
             currentSearchResults.forEach(item => {
-                contentHTML += `
-                    <div class="program-item">
-                        <div class="program-title">${item.nama || item.name || 'Program Tidak Diketahui'}</div>
-                        <div class="program-details">
-                `;
-                
-                // Display all fields from CSV
-                csvHeaders.forEach(header => {
-                    if (item[header]) {
-                        contentHTML += `<strong>${header.charAt(0).toUpperCase() + header.slice(1)}:</strong> ${item[header]} | `;
-                    }
-                });
-                
-                // Remove last " | "
-                contentHTML = contentHTML.slice(0, -3);
-                
-                contentHTML += `
-                        </div>
-                    </div>
-                `;
-
-                // Collect PDF file if exists
-                if (item.pdf_file || item.file_pdf || item.pdf) {
-                    const pdfFileName = item.pdf_file || item.file_pdf || item.pdf;
-                    pdfFiles.push({
-                        name: item.nama || item.name || 'Program',
-                        file: pdfFileName
-                    });
+                const idPel = item['id pel'] || item['id_pel'] || item['idpel'];
+                if (idPel && !idPelList.includes(idPel)) {
+                    idPelList.push(idPel);
                 }
             });
 
-            programContent.innerHTML = contentHTML;
-            
-            // Display PDF links
-            if (pdfFiles.length > 0) {
-                let pdfLinksHTML = '<h3>File PDF Terkait:</h3>';
-                pdfFiles.forEach(pdf => {
-                    pdfLinksHTML += `
-                        <a href="#" class="pdf-link" onclick="loadPDF('pdf/${pdf.file}', '${pdf.name}')">
-                            ${pdf.name} (${pdf.file})
-                        </a>
-                    `;
-                });
-                pdfList.innerHTML = pdfLinksHTML;
-            } else {
-                pdfList.innerHTML = '<p>Tidak ada file PDF yang terkait dengan hasil pencarian.</p>';
+            if (idPelList.length === 0) {
+                pdfList.innerHTML = '<div class="error">Tidak ada ID Pel yang ditemukan dalam hasil pencarian.</div>';
+                pdfSection.classList.remove('hidden');
+                return;
             }
 
+            let pdfLinksHTML = '<h3>File PDF Berdasarkan ID Pel:</h3>';
+            let foundPDFs = 0;
+
+            // Check for each PDF file based on id pel
+            for (const idPel of idPelList) {
+                const pdfFileName = `${idPel}.pdf`;
+                const pdfPath = `pdf/${pdfFileName}`;
+                
+                try {
+                    // Check if PDF file exists
+                    const response = await fetch(pdfPath, { method: 'HEAD' });
+                    if (response.ok) {
+                        const relatedItem = currentSearchResults.find(item => 
+                            (item['id pel'] || item['id_pel'] || item['idpel']) === idPel
+                        );
+                        const programName = relatedItem ? (relatedItem.nama || relatedItem.name || idPel) : idPel;
+                        
+                        pdfLinksHTML += `
+                            <a href="#" class="pdf-link" onclick="loadPDF('${pdfPath}', '${programName}', '${idPel}')">
+                                ${programName} (${idPel}.pdf)
+                            </a>
+                        `;
+                        foundPDFs++;
+                    } else {
+                        pdfLinksHTML += `
+                            <div class="pdf-not-found">
+                                File PDF tidak ditemukan: ${pdfFileName}
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    pdfLinksHTML += `
+                        <div class="pdf-not-found">
+                            Error checking file: ${pdfFileName}
+                        </div>
+                    `;
+                }
+            }
+
+            if (foundPDFs === 0) {
+                pdfLinksHTML += '<div class="error">Tidak ada file PDF yang ditemukan di folder pdf/ untuk ID Pel dari hasil pencarian.</div>';
+            }
+
+            pdfList.innerHTML = pdfLinksHTML;
             pdfSection.classList.remove('hidden');
             pdfSection.scrollIntoView({ behavior: 'smooth' });
         }
 
-        async function loadPDF(pdfPath, programName) {
+        async function loadPDF(pdfPath, programName, idPel) {
             const pdfViewerContainer = document.getElementById('pdfViewerContainer');
             const pdfViewer = document.getElementById('pdfViewer');
             const pdfDownloadLink = document.getElementById('pdfDownloadLink');
             
             try {
-                // Check if PDF file exists
-                const response = await fetch(pdfPath);
-                if (!response.ok) {
-                    throw new Error(`PDF file not found: ${pdfPath}`);
-                }
-                
                 // Load PDF in iframe
-                pdfViewer.src = pdfPath;
+                pdfViewer.src = pdfPath + '#toolbar=1&navpanes=1&scrollbar=1';
                 pdfDownloadLink.href = pdfPath;
                 pdfViewerContainer.classList.remove('hidden');
                 
                 // Update title
                 const title = pdfViewerContainer.querySelector('h3');
-                title.textContent = `PDF Viewer - ${programName}`;
+                title.textContent = `PDF Viewer - ${programName} (${idPel})`;
+                
+                // Scroll to PDF viewer
+                pdfViewerContainer.scrollIntoView({ behavior: 'smooth' });
                 
             } catch (error) {
                 console.error('Error loading PDF:', error);
-                
-                // Show error and create placeholder PDF content
-                showError(`File PDF tidak ditemukan: ${pdfPath}. Menampilkan konten simulasi.`);
-                
-                // Create simulated PDF content
-                const simulatedContent = createSimulatedPDFContent(programName);
-                pdfViewer.style.display = 'none';
-                
-                const contentDiv = document.createElement('div');
-                contentDiv.innerHTML = simulatedContent;
-                contentDiv.style.cssText = 'border: 1px solid #ddd; padding: 20px; background: white; height: 600px; overflow-y: auto;';
-                
-                pdfViewerContainer.innerHTML = `<h3>PDF Content - ${programName}</h3>`;
-                pdfViewerContainer.appendChild(contentDiv);
-                pdfViewerContainer.classList.remove('hidden');
+                showError(`Error loading PDF: ${pdfPath}`);
             }
-        }
-
-        function createSimulatedPDFContent(programName) {
-            return `
-                <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-                    <h1 style="color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">
-                        DOKUMEN PROGRAM: ${programName}
-                    </h1>
-                    
-                    <div style="margin: 20px 0;">
-                        <h2 style="color: #374151;">1. Ringkasan Eksekutif</h2>
-                        <p>Program ${programName} merupakan inisiatif strategis yang dirancang untuk meningkatkan efektivitas dan efisiensi operasional dalam lingkup VKRN. Program ini mencakup berbagai aspek pengembangan yang terintegrasi dengan tujuan mencapai target yang telah ditetapkan.</p>
-                    </div>
-                    
-                    <div style="margin: 20px 0;">
-                        <h2 style="color: #374151;">2. Tujuan Program</h2>
-                        <ul>
-                            <li>Meningkatkan kualitas layanan</li>
-                            <li>Mengoptimalkan penggunaan sumber daya</li>
-                            <li>Memperkuat kapasitas organisasi</li>
-                            <li>Mendukung inovasi dan pengembangan</li>
-                        </ul>
-                    </div>
-                    
-                    <div style="margin: 20px 0;">
-                        <h2 style="color: #374151;">3. Ruang Lingkup</h2>
-                        <p>Ruang lingkup program ${programName} meliputi:</p>
-                        <ol>
-                            <li>Analisis kebutuhan dan perencanaan strategis</li>
-                            <li>Implementasi sistem dan prosedur baru</li>
-                            <li>Pelatihan dan pengembangan SDM</li>
-                            <li>Monitoring dan evaluasi berkelanjutan</li>
-                        </ol>
-                    </div>
-                    
-                    <div style="margin: 20px 0;">
-                        <h2 style="color: #374151;">4. Timeline Implementasi</h2>
-                        <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
-                            <tr style="background-color: #f3f4f6;">
-                                <th style="border: 1px solid #ddd; padding: 8px;">Fase</th>
-                                <th style="border: 1px solid #ddd; padding: 8px;">Aktivitas</th>
-                                <th style="border: 1px solid #ddd; padding: 8px;">Duration</th>
-                            </tr>
-                            <tr>
-                                <td style="border: 1px solid #ddd; padding: 8px;">Fase 1</td>
-                                <td style="border: 1px solid #ddd; padding: 8px;">Perencanaan dan Persiapan</td>
-                                <td style="border: 1px solid #ddd; padding: 8px;">2 bulan</td>
-                            </tr>
-                            <tr>
-                                <td style="border: 1px solid #ddd; padding: 8px;">Fase 2</td>
-                                <td style="border: 1px solid #ddd; padding: 8px;">Implementasi Awal</td>
-                                <td style="border: 1px solid #ddd; padding: 8px;">4 bulan</td>
-                            </tr>
-                            <tr>
-                                <td style="border: 1px solid #ddd; padding: 8px;">Fase 3</td>
-                                <td style="border: 1px solid #ddd; padding: 8px;">Evaluasi dan Penyesuaian</td>
-                                <td style="border: 1px solid #ddd; padding: 8px;">2 bulan</td>
-                            </tr>
-                        </table>
-                    </div>
-                    
-                    <div style="margin: 20px 0;">
-                        <h2 style="color: #374151;">5. Resources dan Budget</h2>
-                        <p>Program ini memerlukan alokasi sumber daya yang mencakup personel, teknologi, dan anggaran operasional. Detail breakdown budget telah disusun berdasarkan analisis kebutuhan komprehensif.</p>
-                    </div>
-                    
-                    <div style="margin: 20px 0;">
-                        <h2 style="color: #374151;">6. Risk Management</h2>
-                        <p>Identifikasi risiko dan strategi mitigasi telah disiapkan untuk memastikan kelancaran implementasi program. Monitoring risiko akan dilakukan secara berkala.</p>
-                    </div>
-                    
-                    <div style="margin: 20px 0; padding: 15px; background-color: #f3f4f6; border-left: 4px solid #2563eb;">
-                        <p><strong>Catatan:</strong> Dokumen ini merupakan simulasi konten PDF untuk program ${programName}. Untuk mengakses dokumen PDF asli, pastikan file tersedia di folder 'pdf' dengan nama yang sesuai dalam data CSV.</p>
-                    </div>
-                </div>
-            `;
         }
 
         function refreshPage() {
@@ -589,6 +497,9 @@
             
             // Hide PDF viewer
             document.getElementById('pdfViewerContainer').classList.add('hidden');
+            
+            // Clear PDF viewer
+            document.getElementById('pdfViewer').src = '';
             
             // Clear current search results
             currentSearchResults = [];
