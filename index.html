@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -111,6 +112,19 @@
             background-color: #f9f9f9;
         }
         
+        .data-table tbody tr {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .data-table tbody tr:hover {
+            background-color: #e3f2fd;
+        }
+        
+        .data-table tbody tr.selected {
+            background-color: #bbdefb;
+        }
+        
         .show-program-btn {
             background-color: #059669;
             color: white;
@@ -130,6 +144,14 @@
             background: white;
             padding: 20px;
             border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .detail-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
@@ -176,6 +198,45 @@
             border: 1px solid #e2e8f0;
             margin-bottom: 15px;
         }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .detail-item {
+            background-color: #f8fafc;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            color: #374151;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            color: #6b7280;
+        }
+        
+        .close-detail-btn {
+            background-color: #6b7280;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            float: right;
+            margin-bottom: 15px;
+        }
+        
+        .close-detail-btn:hover {
+            background-color: #4b5563;
+        }
     </style>
 </head>
 <body>
@@ -194,6 +255,7 @@
             
             <div id="searchResults" class="hidden">
                 <h3>Hasil Pencarian</h3>
+                <p><small>Klik pada baris tabel untuk melihat detail</small></p>
                 <div class="table-container">
                     <table class="data-table">
                         <thead id="tableHeader">
@@ -204,6 +266,15 @@
                     </table>
                 </div>
                 <button onclick="showProgram()" class="show-program-btn">Tampilkan Program</button>
+            </div>
+        </div>
+
+        <!-- Detail Section -->
+        <div id="detailSection" class="detail-section hidden">
+            <button class="close-detail-btn" onclick="closeDetail()">Tutup Detail</button>
+            <h2>Detail Data</h2>
+            <div id="detailContent">
+                <!-- Detail content will be populated here -->
             </div>
         </div>
 
@@ -234,6 +305,7 @@
         let csvHeaders = [];
         let currentSearchResults = [];
         let isSearchMode = true;
+        let selectedRowIndex = -1;
 
         function toggleAction() {
             if (isSearchMode) {
@@ -287,16 +359,16 @@
 
         function loadSampleData() {
             // Sample data with "id pel" column
-            csvHeaders = ['id', 'id pel', 'nama', 'kategori', 'status', 'tanggal'];
+            csvHeaders = ['id', 'id pel', 'nama', 'kategori', 'status', 'tanggal', 'deskripsi', 'pic'];
             csvData = [
-                {id: '1', 'id pel': 'P001', nama: 'Program Alpha', kategori: 'Pengembangan', status: 'Aktif', tanggal: '2024-01-15'},
-                {id: '2', 'id pel': 'P002', nama: 'Project Beta', kategori: 'Penelitian', status: 'Selesai', tanggal: '2024-02-20'},
-                {id: '3', 'id pel': 'P003', nama: 'Inisiatif Gamma', kategori: 'Implementasi', status: 'Pending', tanggal: '2024-03-10'},
-                {id: '4', 'id pel': 'P004', nama: 'Program Delta', kategori: 'Evaluasi', status: 'Aktif', tanggal: '2024-04-05'},
-                {id: '5', 'id pel': 'P005', nama: 'Proyek Epsilon', kategori: 'Pengembangan', status: 'Draft', tanggal: '2024-05-12'},
-                {id: '6', 'id pel': 'P006', nama: 'System Zeta', kategori: 'Maintenance', status: 'Aktif', tanggal: '2024-06-18'},
-                {id: '7', 'id pel': 'P007', nama: 'Application Eta', kategori: 'Testing', status: 'Pending', tanggal: '2024-07-22'},
-                {id: '8', 'id pel': 'P008', nama: 'Module Theta', kategori: 'Development', status: 'Selesai', tanggal: '2024-08-14'}
+                {id: '1', 'id pel': 'P001', nama: 'Program Alpha', kategori: 'Pengembangan', status: 'Aktif', tanggal: '2024-01-15', deskripsi: 'Program pengembangan sistem informasi terintegrasi', pic: 'Ahmad Santoso'},
+                {id: '2', 'id pel': 'P002', nama: 'Project Beta', kategori: 'Penelitian', status: 'Selesai', tanggal: '2024-02-20', deskripsi: 'Penelitian teknologi AI dan machine learning', pic: 'Dr. Sari Indira'},
+                {id: '3', 'id pel': 'P003', nama: 'Inisiatif Gamma', kategori: 'Implementasi', status: 'Pending', tanggal: '2024-03-10', deskripsi: 'Implementasi sistem keamanan cyber', pic: 'Budi Prasetyo'},
+                {id: '4', 'id pel': 'P004', nama: 'Program Delta', kategori: 'Evaluasi', status: 'Aktif', tanggal: '2024-04-05', deskripsi: 'Evaluasi komprehensif sistem IT', pic: 'Lisa Maharani'},
+                {id: '5', 'id pel': 'P005', nama: 'Proyek Epsilon', kategori: 'Pengembangan', status: 'Draft', tanggal: '2024-05-12', deskripsi: 'Pengembangan aplikasi mobile', pic: 'Rahman Hidayat'},
+                {id: '6', 'id pel': 'P006', nama: 'System Zeta', kategori: 'Maintenance', status: 'Aktif', tanggal: '2024-06-18', deskripsi: 'Pemeliharaan sistem database', pic: 'Dewi Kusuma'},
+                {id: '7', 'id pel': 'P007', nama: 'Application Eta', kategori: 'Testing', status: 'Pending', tanggal: '2024-07-22', deskripsi: 'Pengujian aplikasi baru', pic: 'Tony Wijaya'},
+                {id: '8', 'id pel': 'P008', nama: 'Module Theta', kategori: 'Development', status: 'Selesai', tanggal: '2024-08-14', deskripsi: 'Pengembangan modul ERP', pic: 'Maya Sari'}
             ];
         }
 
@@ -335,6 +407,7 @@
             // Clear previous results
             tableHeader.innerHTML = '';
             tableBody.innerHTML = '';
+            selectedRowIndex = -1;
             
             if (data.length === 0) {
                 tableBody.innerHTML = `<tr><td colspan="${csvHeaders.length}" style="text-align: center;">Tidak ada data yang ditemukan</td></tr>`;
@@ -349,8 +422,11 @@
                 tableHeader.appendChild(headerRow);
 
                 // Create table rows
-                data.forEach(item => {
+                data.forEach((item, index) => {
                     const row = document.createElement('tr');
+                    row.setAttribute('data-index', index);
+                    row.onclick = () => showRowDetail(index, item);
+                    
                     csvHeaders.forEach(header => {
                         const td = document.createElement('td');
                         td.textContent = item[header] || '';
@@ -361,6 +437,67 @@
             }
             
             resultsDiv.classList.remove('hidden');
+        }
+
+        function showRowDetail(index, item) {
+            // Remove previous selection
+            const previousSelected = document.querySelector('.data-table tbody tr.selected');
+            if (previousSelected) {
+                previousSelected.classList.remove('selected');
+            }
+            
+            // Select current row
+            const currentRow = document.querySelector(`[data-index="${index}"]`);
+            if (currentRow) {
+                currentRow.classList.add('selected');
+            }
+            
+            selectedRowIndex = index;
+            
+            // Populate detail section
+            const detailSection = document.getElementById('detailSection');
+            const detailContent = document.getElementById('detailContent');
+            
+            let detailHTML = `<div class="detail-grid">`;
+            
+            csvHeaders.forEach(header => {
+                const value = item[header] || 'Tidak tersedia';
+                detailHTML += `
+                    <div class="detail-item">
+                        <div class="detail-label">${header.charAt(0).toUpperCase() + header.slice(1)}</div>
+                        <div class="detail-value">${value}</div>
+                    </div>
+                `;
+            });
+            
+            detailHTML += `</div>`;
+            
+            // Add additional information if available
+            const idPel = item['id pel'] || item['id_pel'] || item['idpel'];
+            if (idPel) {
+                detailHTML += `
+                    <div style="margin-top: 20px; padding: 15px; background-color: #f0f9ff; border-radius: 4px; border: 1px solid #0ea5e9;">
+                        <strong>Informasi PDF:</strong><br>
+                        File PDF untuk data ini kemungkinan tersedia dengan nama: <strong>${idPel}.pdf</strong> di folder pdf/
+                    </div>
+                `;
+            }
+            
+            detailContent.innerHTML = detailHTML;
+            detailSection.classList.remove('hidden');
+            detailSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function closeDetail() {
+            document.getElementById('detailSection').classList.add('hidden');
+            
+            // Remove selection from table
+            const selectedRow = document.querySelector('.data-table tbody tr.selected');
+            if (selectedRow) {
+                selectedRow.classList.remove('selected');
+            }
+            
+            selectedRowIndex = -1;
         }
 
         async function showProgram() {
@@ -475,6 +612,9 @@
             // Hide search results
             document.getElementById('searchResults').classList.add('hidden');
             
+            // Hide detail section
+            document.getElementById('detailSection').classList.add('hidden');
+            
             // Hide PDF section
             document.getElementById('pdfSection').classList.add('hidden');
             
@@ -487,6 +627,7 @@
             
             // Clear current search results
             currentSearchResults = [];
+            selectedRowIndex = -1;
             
             // Change button back to search mode
             const actionBtn = document.getElementById('actionBtn');
