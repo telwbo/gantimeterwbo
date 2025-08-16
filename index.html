@@ -1,0 +1,354 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VKRN Data Search</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        .header {
+            background-color: #2563eb;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        
+        .search-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .search-btn {
+            background-color: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .search-btn:hover {
+            background-color: #1d4ed8;
+        }
+        
+        .refresh-btn {
+            background-color: #dc2626;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .refresh-btn:hover {
+            background-color: #b91c1c;
+        }
+        
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th,
+        .data-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        .data-table th {
+            background-color: #2563eb;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .data-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .show-program-btn {
+            background-color: #059669;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        
+        .show-program-btn:hover {
+            background-color: #047857;
+        }
+        
+        .pdf-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .program-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        
+        .program-title {
+            font-weight: bold;
+            font-size: 18px;
+            color: #2563eb;
+            margin-bottom: 5px;
+        }
+        
+        .program-details {
+            color: #666;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <h1>VKRN Data Search</h1>
+        <p>Aplikasi Pencarian Data CSV dengan Tampilan PDF</p>
+    </header>
+
+    <div class="container">
+        <!-- Search Section -->
+        <div class="search-section">
+            <h2>Pencarian Data</h2>
+            <input type="text" id="searchInput" class="search-input" placeholder="Masukkan kata kunci pencarian...">
+            <button id="actionBtn" onclick="toggleAction()" class="search-btn">Cari</button>
+            
+            <div id="searchResults" class="hidden">
+                <h3>Hasil Pencarian</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nama</th>
+                                <th>Kategori</th>
+                                <th>Status</th>
+                                <th>Tanggal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <button onclick="showProgram()" class="show-program-btn">Tampilkan Program</button>
+            </div>
+        </div>
+
+        <!-- PDF Section -->
+        <div id="pdfSection" class="pdf-section hidden">
+            <h2>Program Report</h2>
+            <div id="programContent">
+                <!-- Content will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample CSV data
+        let csvData = [
+            {id: 1, nama: "Program Alpha", kategori: "Pengembangan", status: "Aktif", tanggal: "2024-01-15"},
+            {id: 2, nama: "Project Beta", kategori: "Penelitian", status: "Selesai", tanggal: "2024-02-20"},
+            {id: 3, nama: "Inisiatif Gamma", kategori: "Implementasi", status: "Pending", tanggal: "2024-03-10"},
+            {id: 4, nama: "Program Delta", kategori: "Evaluasi", status: "Aktif", tanggal: "2024-04-05"},
+            {id: 5, nama: "Proyek Epsilon", kategori: "Pengembangan", status: "Draft", tanggal: "2024-05-12"},
+            {id: 6, nama: "System Zeta", kategori: "Maintenance", status: "Aktif", tanggal: "2024-06-18"},
+            {id: 7, nama: "Application Eta", kategori: "Testing", status: "Pending", tanggal: "2024-07-22"},
+            {id: 8, nama: "Module Theta", kategori: "Development", status: "Selesai", tanggal: "2024-08-14"},
+            {id: 9, nama: "System Iota", kategori: "Pengembangan", status: "Aktif", tanggal: "2024-09-05"},
+            {id: 10, nama: "Application Kappa", kategori: "Testing", status: "Draft", tanggal: "2024-10-12"},
+            {id: 11, nama: "Program Lambda", kategori: "Penelitian", status: "Pending", tanggal: "2024-11-18"},
+            {id: 12, nama: "Project Mu", kategori: "Implementasi", status: "Selesai", tanggal: "2024-12-22"}
+        ];
+
+        let currentSearchResults = [];
+        let isSearchMode = true;
+
+        function toggleAction() {
+            if (isSearchMode) {
+                searchData();
+            } else {
+                refreshPage();
+            }
+        }
+
+        function searchData() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            let filteredData = csvData;
+            
+            if (searchTerm) {
+                filteredData = csvData.filter(item => 
+                    item.nama.toLowerCase().includes(searchTerm) ||
+                    item.kategori.toLowerCase().includes(searchTerm) ||
+                    item.status.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            currentSearchResults = filteredData;
+            displayResults(filteredData);
+            
+            // Change button to refresh mode
+            const actionBtn = document.getElementById('actionBtn');
+            actionBtn.textContent = 'Refresh';
+            actionBtn.className = 'refresh-btn';
+            isSearchMode = false;
+        }
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('searchResults');
+            const tableBody = document.getElementById('tableBody');
+            
+            tableBody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Tidak ada data yang ditemukan</td></tr>';
+            } else {
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.id}</td>
+                        <td>${item.nama}</td>
+                        <td>${item.kategori}</td>
+                        <td>${item.status}</td>
+                        <td>${item.tanggal}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+            
+            resultsDiv.classList.remove('hidden');
+        }
+
+        function showProgram() {
+            if (currentSearchResults.length === 0) {
+                alert('Tidak ada data pencarian yang tersedia.');
+                return;
+            }
+
+            const pdfSection = document.getElementById('pdfSection');
+            const programContent = document.getElementById('programContent');
+            
+            const searchTerm = document.getElementById('searchInput').value || 'Semua Data';
+            const currentDate = new Date().toLocaleDateString('id-ID');
+            
+            let contentHTML = `
+                <h3>Laporan Program VKRN</h3>
+                <p><strong>Tanggal:</strong> ${currentDate}</p>
+                <p><strong>Pencarian:</strong> ${searchTerm}</p>
+                <p><strong>Total Data:</strong> ${currentSearchResults.length} program</p>
+                <hr style="margin: 20px 0;">
+            `;
+            
+            currentSearchResults.forEach(item => {
+                contentHTML += `
+                    <div class="program-item">
+                        <div class="program-title">${item.nama}</div>
+                        <div class="program-details">
+                            <strong>ID:</strong> ${item.id} | 
+                            <strong>Kategori:</strong> ${item.kategori} | 
+                            <strong>Status:</strong> ${item.status} | 
+                            <strong>Tanggal:</strong> ${item.tanggal}
+                        </div>
+                    </div>
+                `;
+            });
+
+            programContent.innerHTML = contentHTML;
+            pdfSection.classList.remove('hidden');
+            pdfSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function refreshPage() {
+            // Clear search input
+            document.getElementById('searchInput').value = '';
+            
+            // Hide search results
+            document.getElementById('searchResults').classList.add('hidden');
+            
+            // Hide PDF section
+            document.getElementById('pdfSection').classList.add('hidden');
+            
+            // Clear current search results
+            currentSearchResults = [];
+            
+            // Change button back to search mode
+            const actionBtn = document.getElementById('actionBtn');
+            actionBtn.textContent = 'Cari';
+            actionBtn.className = 'search-btn';
+            isSearchMode = true;
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Enter key search
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                if (isSearchMode) {
+                    searchData();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
