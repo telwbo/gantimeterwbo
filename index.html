@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -119,6 +120,20 @@
             transform: none;
             box-shadow: none;
         }
+        .show-program-btn.cached {
+            background-color: #f39c12;
+            position: relative;
+        }
+        .show-program-btn.cached:hover {
+            background-color: #d68910;
+        }
+        .show-program-btn.cached::after {
+            content: "⚡";
+            position: absolute;
+            top: 2px;
+            right: 5px;
+            font-size: 12px;
+        }
         #pdfContainer {
             display: none;
             margin-top: 30px;
@@ -176,6 +191,21 @@
             font-size: 14px;
             font-weight: bold;
         }
+        .cache-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #34495e;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+            display: none;
+        }
+        .cache-status.show {
+            display: block;
+        }
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -183,6 +213,12 @@
             .result-item {
                 width: 100%;
                 margin-right: 0;
+            }
+            .cache-status {
+                top: 10px;
+                right: 10px;
+                font-size: 11px;
+                padding: 8px 12px;
             }
         }
     </style>
@@ -202,6 +238,10 @@
         </div>
     </div>
 
+    <div class="cache-status" id="cacheStatus">
+        Cache status
+    </div>
+
     <script>
         // Variabel global
         let csvData = [];
@@ -209,6 +249,11 @@
         let searchIdpel = '';
         let foundPages = [];
         let devicePixelRatio = window.devicePixelRatio || 1;
+        
+        // Cache untuk menyimpan data PDF yang sudah dimuat
+        let pdfCache = new Map();
+        let searchCache = new Map();
+        let renderedPagesCache = new Map();
         
         // Daftar file PDF yang tersedia
         const availablePDFs = [
@@ -232,6 +277,59 @@
         
         // Set up PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        // Fungsi untuk menampilkan status cache
+        function showCacheStatus(message, duration = 2000) {
+            const cacheStatus = document.getElementById('cacheStatus');
+            cacheStatus.textContent = message;
+            cacheStatus.classList.add('show');
+            
+            setTimeout(() => {
+                cacheStatus.classList.remove('show');
+            }, duration);
+        }
+        
+        // Fungsi untuk membuat key cache
+        function createCacheKey(idpel, pdfFile) {
+            return `${idpel}_${pdfFile}`;
+        }
+        
+        // Fungsi untuk menyimpan ke localStorage
+        function saveToLocalStorage() {
+            try {
+                // Simpan hanya metadata, bukan objek PDF yang besar
+                const searchCacheData = {};
+                for (const [key, value] of searchCache.entries()) {
+                    searchCacheData[key] = {
+                        foundPages: value.foundPages,
+                        pdfFile: value.pdfFile,
+                        timestamp: value.timestamp
+                    };
+                }
+                localStorage.setItem('vkrn_search_cache', JSON.stringify(searchCacheData));
+            } catch (error) {
+                console.warn('Gagal menyimpan cache ke localStorage:', error);
+            }
+        }
+        
+        // Fungsi untuk memuat dari localStorage
+        function loadFromLocalStorage() {
+            try {
+                const searchCacheData = localStorage.getItem('vkrn_search_cache');
+                if (searchCacheData) {
+                    const parsed = JSON.parse(searchCacheData);
+                    for (const [key, value] of Object.entries(parsed)) {
+                        // Hanya muat cache yang masih fresh (kurang dari 24 jam)
+                        const age = Date.now() - value.timestamp;
+                        if (age < 24 * 60 * 60 * 1000) { // 24 jam
+                            searchCache.set(key, value);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('Gagal memuat cache dari localStorage:', error);
+            }
+        }
         
         // Fungsi untuk memuat data CSV
         async function loadCSVData() {
@@ -292,6 +390,16 @@
             displayResults(results);
         }
         
+        // Fungsi untuk cek apakah IDPEL sudah ada di cache
+        function isIdpelCached(idpel) {
+            for (const [key, value] of searchCache.entries()) {
+                if (key.startsWith(idpel + '_')) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
         // Fungsi untuk menampilkan hasil pencarian
         function displayResults(results) {
             const resultsContainer = document.getElementById('resultsContainer');
@@ -320,8 +428,14 @@
                 
                 // Tambahkan tombol "Tampilkan Program" jika ada IDPEL
                 if (item.IDPEL && item.IDPEL.trim() !== '') {
-                    html += `<button class="show-program-btn" onclick="showProgram('${item.IDPEL}')">
-                        📄 Tampilkan Program<br>IDPEL: ${item.IDPEL}
+                    const cached = isIdpelCached(item.IDPEL);
+                    const buttonClass = cached ? 'show-program-btn cached' : 'show-program-btn';
+                    const buttonText = cached ? 
+                        `📄 Tampilkan Program (Cache)<br>IDPEL: ${item.IDPEL}` : 
+                        `📄 Tampilkan Program<br>IDPEL: ${item.IDPEL}`;
+                    
+                    html += `<button class="${buttonClass}" onclick="showProgram('${item.IDPEL}')">
+                        ${buttonText}
                     </button>`;
                 }
                 
@@ -331,8 +445,41 @@
             resultsContainer.innerHTML = html;
         }
         
-        // Fungsi untuk mencari teks dalam PDF
-        async function searchInPDF(pdf, searchText) {
+        // Fungsi untuk memuat PDF dengan cache
+        async function loadPDF(pdfFile) {
+            // Cek apakah PDF sudah ada di cache
+            if (pdfCache.has(pdfFile)) {
+                showCacheStatus('📄 Menggunakan PDF dari cache');
+                return pdfCache.get(pdfFile);
+            }
+            
+            try {
+                showCacheStatus('📥 Memuat PDF baru...');
+                const loadingTask = pdfjsLib.getDocument(pdfFile);
+                const pdf = await loadingTask.promise;
+                
+                // Simpan ke cache
+                pdfCache.set(pdfFile, pdf);
+                showCacheStatus('✅ PDF disimpan ke cache');
+                
+                return pdf;
+            } catch (error) {
+                showCacheStatus('❌ Gagal memuat PDF');
+                throw error;
+            }
+        }
+        
+        // Fungsi untuk mencari teks dalam PDF dengan cache
+        async function searchInPDFWithCache(pdf, pdfFile, searchText) {
+            const cacheKey = createCacheKey(searchText, pdfFile);
+            
+            // Cek apakah hasil pencarian sudah ada di cache
+            if (searchCache.has(cacheKey)) {
+                showCacheStatus('⚡ Menggunakan hasil pencarian dari cache');
+                return searchCache.get(cacheKey).foundPages;
+            }
+            
+            showCacheStatus('🔍 Mencari dalam PDF...');
             const foundResults = [];
             
             for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
@@ -356,6 +503,19 @@
                 }
             }
             
+            // Simpan hasil ke cache
+            if (foundResults.length > 0) {
+                searchCache.set(cacheKey, {
+                    foundPages: foundResults,
+                    pdfFile: pdfFile,
+                    timestamp: Date.now()
+                });
+                
+                // Simpan ke localStorage
+                saveToLocalStorage();
+                showCacheStatus('💾 Hasil pencarian disimpan ke cache');
+            }
+            
             return foundResults;
         }
         
@@ -375,17 +535,16 @@
             foundPages = [];
             
             // Tampilkan loading message
-            pdfViewer.innerHTML = '<div class="loading-message">🔍 Mencari dan memuat PDF...<br>Mohon tunggu sebentar</div>';
+            pdfViewer.innerHTML = '<div class="loading-message">🔍 Mencari PDF...<br>Menggunakan cache untuk mempercepat proses</div>';
             
             // Coba setiap file PDF
             for (const pdfFile of availablePDFs) {
                 try {
-                    // Load PDF
-                    const loadingTask = pdfjsLib.getDocument(pdfFile.file);
-                    currentPdf = await loadingTask.promise;
+                    // Load PDF dengan cache
+                    currentPdf = await loadPDF(pdfFile.file);
                     
-                    // Cari IDPEL dalam PDF
-                    const searchResults = await searchInPDF(currentPdf, idpel);
+                    // Cari IDPEL dalam PDF dengan cache
+                    const searchResults = await searchInPDFWithCache(currentPdf, pdfFile.file, idpel);
                     
                     if (searchResults.length > 0) {
                         // IDPEL ditemukan!
@@ -410,12 +569,63 @@
             `;
         }
         
+        // Fungsi untuk render halaman dengan cache
+        async function renderPageWithCache(page, pageNumber, scale) {
+            const cacheKey = `page_${pageNumber}_${scale}`;
+            
+            // Cek apakah halaman sudah di-render dan di-cache
+            if (renderedPagesCache.has(cacheKey)) {
+                showCacheStatus('⚡ Menggunakan halaman dari cache');
+                return renderedPagesCache.get(cacheKey).cloneNode(true);
+            }
+            
+            const scaledViewport = page.getViewport({ scale: scale });
+            
+            // Buat canvas dengan resolusi tinggi
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            // Set ukuran canvas dengan device pixel ratio untuk kualitas retina
+            const outputScale = devicePixelRatio;
+            canvas.width = Math.floor(scaledViewport.width * outputScale);
+            canvas.height = Math.floor(scaledViewport.height * outputScale);
+            canvas.style.width = Math.floor(scaledViewport.width) + "px";
+            canvas.style.height = Math.floor(scaledViewport.height) + "px";
+            
+            // Scale context untuk rendering berkualitas tinggi
+            const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+            
+            // Set rendering context dengan kualitas tinggi
+            context.imageSmoothingEnabled = true;
+            context.imageSmoothingQuality = 'high';
+            
+            canvas.className = 'pdf-canvas';
+            
+            // Render halaman dengan kualitas tinggi
+            const renderContext = {
+                canvasContext: context,
+                viewport: scaledViewport,
+                transform: transform
+            };
+            
+            await page.render(renderContext).promise;
+            
+            // Simpan ke cache (dengan batas ukuran cache)
+            if (renderedPagesCache.size < 50) { // Batasi cache maksimal 50 halaman
+                renderedPagesCache.set(cacheKey, canvas.cloneNode(true));
+            }
+            
+            return { canvas, viewport: scaledViewport };
+        }
+        
         // Fungsi untuk render semua halaman yang mengandung IDPEL
         async function renderAllPages() {
             if (!currentPdf || foundPages.length === 0) return;
             
             const pdfViewer = document.getElementById('pdfViewer');
             pdfViewer.innerHTML = '';
+            
+            showCacheStatus('🖼️ Merender halaman...');
             
             for (const foundPage of foundPages) {
                 try {
@@ -427,36 +637,10 @@
                     const baseViewport = page.getViewport({ scale: 1 });
                     const scale = containerWidth / baseViewport.width;
                     
-                    const scaledViewport = page.getViewport({ scale: scale });
-                    
-                    // Buat canvas dengan resolusi tinggi
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    
-                    // Set ukuran canvas dengan device pixel ratio untuk kualitas retina
-                    const outputScale = devicePixelRatio;
-                    canvas.width = Math.floor(scaledViewport.width * outputScale);
-                    canvas.height = Math.floor(scaledViewport.height * outputScale);
-                    canvas.style.width = Math.floor(scaledViewport.width) + "px";
-                    canvas.style.height = Math.floor(scaledViewport.height) + "px";
-                    
-                    // Scale context untuk rendering berkualitas tinggi
-                    const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
-                    
-                    // Set rendering context dengan kualitas tinggi
-                    context.imageSmoothingEnabled = true;
-                    context.imageSmoothingQuality = 'high';
-                    
-                    canvas.className = 'pdf-canvas';
-                    
-                    // Render halaman dengan kualitas tinggi
-                    const renderContext = {
-                        canvasContext: context,
-                        viewport: scaledViewport,
-                        transform: transform
-                    };
-                    
-                    await page.render(renderContext).promise;
+                    // Render dengan cache
+                    const renderResult = await renderPageWithCache(page, foundPage.page, scale);
+                    const canvas = renderResult.canvas;
+                    const scaledViewport = renderResult.viewport;
                     
                     // Buat container untuk halaman
                     const pageDiv = document.createElement('div');
@@ -473,6 +657,8 @@
                     console.error(`Error rendering page ${foundPage.page}:`, error);
                 }
             }
+            
+            showCacheStatus('✅ Selesai merender');
         }
         
         // Fungsi untuk highlight teks dalam halaman
@@ -504,9 +690,31 @@
             }
         }
         
+        // Fungsi untuk membersihkan cache jika terlalu besar
+        function cleanupCache() {
+            // Bersihkan cache rendered pages jika terlalu besar
+            if (renderedPagesCache.size > 100) {
+                const keysToDelete = Array.from(renderedPagesCache.keys()).slice(0, 50);
+                keysToDelete.forEach(key => renderedPagesCache.delete(key));
+                showCacheStatus('🧹 Cache dibersihkan');
+            }
+            
+            // Bersihkan search cache yang sudah lama (lebih dari 24 jam)
+            const now = Date.now();
+            for (const [key, value] of searchCache.entries()) {
+                if (now - value.timestamp > 24 * 60 * 60 * 1000) {
+                    searchCache.delete(key);
+                }
+            }
+        }
+        
         // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
             loadCSVData();
+            loadFromLocalStorage();
+            
+            // Cleanup cache setiap 5 menit
+            setInterval(cleanupCache, 5 * 60 * 1000);
             
             document.getElementById('searchButton').addEventListener('click', () => {
                 const keyword = document.getElementById('searchInput').value;
@@ -519,6 +727,11 @@
                     performSearch(keyword);
                 }
             });
+        });
+        
+        // Simpan cache sebelum halaman ditutup
+        window.addEventListener('beforeunload', () => {
+            saveToLocalStorage();
         });
     </script>
 </body>
