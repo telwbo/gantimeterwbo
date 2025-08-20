@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -90,16 +91,22 @@
             color: #7f8c8d;
             padding: 20px;
         }
+        .program-buttons {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
         .show-program-btn {
             background-color: #27ae60;
             color: white;
             border: none;
-            padding: 8px 15px;
+            padding: 8px 12px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
-            margin-top: 10px;
+            font-size: 12px;
             transition: background-color 0.2s;
+            white-space: nowrap;
         }
         .show-program-btn:hover {
             background-color: #229954;
@@ -142,11 +149,12 @@
         }
         .pdf-controls button {
             margin: 0 5px;
-            padding: 5px 10px;
+            padding: 8px 15px;
             border: 1px solid #ddd;
             background-color: white;
             cursor: pointer;
-            border-radius: 3px;
+            border-radius: 4px;
+            font-size: 14px;
         }
         .pdf-controls button:hover {
             background-color: #f0f0f0;
@@ -155,15 +163,30 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        .pdf-info {
+            margin: 0 10px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
         .loading-message {
             text-align: center;
             color: #7f8c8d;
-            padding: 20px;
+            padding: 40px 20px;
+            font-size: 16px;
         }
         .error-message {
             text-align: center;
             color: #e74c3c;
-            padding: 20px;
+            padding: 40px 20px;
+            font-size: 16px;
+        }
+        .pdf-file-info {
+            background-color: #ecf0f1;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #2c3e50;
         }
         @media (max-width: 768px) {
             .main-content {
@@ -171,6 +194,13 @@
             }
             .container {
                 padding: 15px;
+            }
+            .program-buttons {
+                flex-direction: column;
+            }
+            .show-program-btn {
+                font-size: 14px;
+                padding: 10px 15px;
             }
         }
     </style>
@@ -190,11 +220,14 @@
             
             <div class="pdf-panel">
                 <div id="pdfContainer">
-                    <h3 id="pdfTitle">Program untuk IDPEL: <span id="currentIdpel"></span></h3>
+                    <h3>Program PDF</h3>
+                    <div class="pdf-file-info" id="pdfFileInfo">
+                        File: <span id="currentFileName">-</span>
+                    </div>
                     <div class="pdf-controls">
-                        <button id="prevPage">Halaman Sebelumnya</button>
-                        <span id="pageInfo">Halaman <span id="currentPage">1</span> dari <span id="totalPages">1</span></span>
-                        <button id="nextPage">Halaman Selanjutnya</button>
+                        <button id="prevPage">← Sebelumnya</button>
+                        <span class="pdf-info" id="pageInfo">Halaman <span id="currentPage">1</span> dari <span id="totalPages">1</span></span>
+                        <button id="nextPage">Selanjutnya →</button>
                     </div>
                     <div class="pdf-viewer" id="pdfViewer"></div>
                 </div>
@@ -208,6 +241,30 @@
         let currentPdf = null;
         let currentPage = 1;
         let totalPages = 0;
+        
+        // Daftar file PDF yang tersedia
+        const availablePDFs = [
+            { 
+                file: 'pdf/CR_PK_TOKEN_LPB_kolektif-KRN KEJAJAR.pdf', 
+                name: 'CR PK TOKEN LPB Kolektif KRN KEJAJAR',
+                keywords: ['cr', 'pk', 'token', 'lpb', 'kolektif', 'krn', 'kejajar']
+            },
+            { 
+                file: 'pdf/KRN KEJAJAR.pdf', 
+                name: 'KRN KEJAJAR',
+                keywords: ['krn', 'kejajar']
+            },
+            { 
+                file: 'pdf/KRN KEJAJAR160824.PDF', 
+                name: 'KRN KEJAJAR 160824',
+                keywords: ['krn', 'kejajar', '160824']
+            },
+            { 
+                file: 'pdf/TOKEN JAMAL 160824.pdf', 
+                name: 'TOKEN JAMAL 160824',
+                keywords: ['token', 'jamal', '160824']
+            }
+        ];
         
         // Set up PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -283,10 +340,14 @@
                     html += `<p><strong>${key}:</strong> ${item[key]}</p>`;
                 }
                 
-                // Tambahkan tombol "Tampilkan Program" jika ada IDPEL
-                if (item.IDPEL && item.IDPEL.trim() !== '') {
-                    html += `<button class="show-program-btn" onclick="showProgram('${item.IDPEL}')">Tampilkan Program</button>`;
-                }
+                // Tambahkan tombol untuk setiap PDF yang tersedia
+                html += '<div class="program-buttons">';
+                availablePDFs.forEach((pdf, pdfIndex) => {
+                    html += `<button class="show-program-btn" onclick="showProgram('${pdf.file}', '${pdf.name}')">
+                        ${pdf.name}
+                    </button>`;
+                });
+                html += '</div>';
                 
                 html += '</div>';
             });
@@ -295,50 +356,24 @@
         }
         
         // Fungsi untuk menampilkan program PDF
-        async function showProgram(idpel) {
+        async function showProgram(pdfPath, pdfName) {
             const pdfContainer = document.getElementById('pdfContainer');
             const pdfViewer = document.getElementById('pdfViewer');
-            const currentIdpelSpan = document.getElementById('currentIdpel');
+            const currentFileNameSpan = document.getElementById('currentFileName');
             
-            // Update IDPEL yang sedang ditampilkan
-            currentIdpelSpan.textContent = idpel;
+            // Update nama file yang sedang ditampilkan
+            currentFileNameSpan.textContent = pdfName;
             
             // Tampilkan container PDF
             pdfContainer.style.display = 'block';
             
+            // Scroll ke panel PDF
+            pdfContainer.scrollIntoView({ behavior: 'smooth' });
+            
             // Tampilkan loading message
-            pdfViewer.innerHTML = '<div class="loading-message">Memuat PDF...</div>';
+            pdfViewer.innerHTML = '<div class="loading-message">📄 Memuat PDF...<br>Mohon tunggu sebentar</div>';
             
             try {
-                // Coba beberapa format nama file yang mungkin
-                const possiblePaths = [
-                    `pdf/${idpel}.pdf`,
-                    `pdf/${idpel.toUpperCase()}.pdf`,
-                    `pdf/${idpel.toLowerCase()}.pdf`,
-                    `pdf/IDPEL_${idpel}.pdf`,
-                    `pdf/idpel_${idpel}.pdf`
-                ];
-                
-                let pdfPath = null;
-                
-                // Coba setiap path sampai menemukan file yang ada
-                for (const path of possiblePaths) {
-                    try {
-                        const response = await fetch(path);
-                        if (response.ok) {
-                            pdfPath = path;
-                            break;
-                        }
-                    } catch (e) {
-                        // Lanjut ke path berikutnya
-                        continue;
-                    }
-                }
-                
-                if (!pdfPath) {
-                    throw new Error(`File PDF tidak ditemukan untuk IDPEL: ${idpel}`);
-                }
-                
                 // Load PDF menggunakan PDF.js
                 const loadingTask = pdfjsLib.getDocument(pdfPath);
                 currentPdf = await loadingTask.promise;
@@ -353,7 +388,13 @@
                 
             } catch (error) {
                 console.error('Error loading PDF:', error);
-                pdfViewer.innerHTML = `<div class="error-message">Gagal memuat PDF untuk IDPEL: ${idpel}<br>Error: ${error.message}</div>`;
+                pdfViewer.innerHTML = `
+                    <div class="error-message">
+                        ❌ Gagal memuat PDF: ${pdfName}<br>
+                        <small>Error: ${error.message}</small><br><br>
+                        <small>Pastikan file PDF tersedia di folder 'pdf'</small>
+                    </div>
+                `;
             }
         }
         
@@ -362,24 +403,30 @@
             if (!currentPdf) return;
             
             const pdfViewer = document.getElementById('pdfViewer');
-            pdfViewer.innerHTML = '<div class="loading-message">Memuat halaman...</div>';
+            pdfViewer.innerHTML = '<div class="loading-message">🔄 Memuat halaman...</div>';
             
             try {
                 const page = await currentPdf.getPage(pageNumber);
-                const scale = 1.5;
-                const viewport = page.getViewport({ scale: scale });
+                
+                // Hitung scale berdasarkan lebar container
+                const container = pdfViewer;
+                const containerWidth = container.clientWidth - 40; // padding
+                const viewport = page.getViewport({ scale: 1 });
+                const scale = Math.min(containerWidth / viewport.width, 2); // maksimal scale 2
+                
+                const scaledViewport = page.getViewport({ scale: scale });
                 
                 // Buat canvas untuk render PDF
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
+                canvas.height = scaledViewport.height;
+                canvas.width = scaledViewport.width;
                 canvas.className = 'pdf-canvas';
                 
                 // Render halaman
                 const renderContext = {
                     canvasContext: context,
-                    viewport: viewport
+                    viewport: scaledViewport
                 };
                 
                 await page.render(renderContext).promise;
@@ -396,7 +443,7 @@
                 
             } catch (error) {
                 console.error('Error rendering page:', error);
-                pdfViewer.innerHTML = `<div class="error-message">Gagal memuat halaman ${pageNumber}</div>`;
+                pdfViewer.innerHTML = `<div class="error-message">❌ Gagal memuat halaman ${pageNumber}</div>`;
             }
         }
         
