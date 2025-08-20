@@ -16,7 +16,7 @@
             background-color: #f5f5f5;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background-color: white;
             padding: 30px;
@@ -61,15 +61,17 @@
             gap: 20px;
         }
         .results-panel {
-            flex: 1;
+            flex: 0 0 350px;
             min-width: 300px;
         }
         .pdf-panel {
             flex: 1;
-            min-width: 400px;
+            min-width: 600px;
         }
         #resultsContainer {
             margin-top: 20px;
+            max-height: 70vh;
+            overflow-y: auto;
         }
         .result-item {
             padding: 15px;
@@ -81,16 +83,18 @@
         .result-item p {
             margin: 5px 0;
             word-wrap: break-word;
+            font-size: 14px;
         }
         .result-item strong {
             color: #2c3e50;
         }
         .result-item .idpel {
             background-color: #e8f6ff;
-            padding: 5px;
+            padding: 8px;
             border-radius: 4px;
             border-left: 3px solid #3498db;
             margin: 10px 0;
+            font-weight: bold;
         }
         .no-results {
             text-align: center;
@@ -104,11 +108,11 @@
             padding: 10px 15px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             transition: all 0.2s;
-            white-space: nowrap;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-top: 10px;
+            width: 100%;
         }
         .show-program-btn:hover {
             background-color: #229954;
@@ -151,44 +155,24 @@
             border-color: #f5c6cb;
             color: #721c24;
         }
-        .pdf-viewer {
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            overflow: auto;
-            max-height: 600px;
-            background-color: white;
-        }
-        .pdf-page {
-            margin-bottom: 10px;
-            text-align: center;
-            position: relative;
-        }
-        .pdf-canvas {
-            border-bottom: 1px solid #eee;
-            max-width: 100%;
-            height: auto;
-        }
-        .highlight-overlay {
-            position: absolute;
-            background-color: rgba(255, 255, 0, 0.3);
-            border: 2px solid #ffeb3b;
-            border-radius: 2px;
-            pointer-events: none;
-        }
         .pdf-controls {
             margin-bottom: 15px;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
         }
         .pdf-controls button {
-            margin: 0 5px;
             padding: 8px 15px;
             border: 1px solid #ddd;
             background-color: white;
             cursor: pointer;
             border-radius: 4px;
             font-size: 14px;
+            transition: background-color 0.2s;
         }
-        .pdf-controls button:hover {
+        .pdf-controls button:hover:not(:disabled) {
             background-color: #f0f0f0;
         }
         .pdf-controls button:disabled {
@@ -196,9 +180,63 @@
             cursor: not-allowed;
         }
         .pdf-info {
-            margin: 0 10px;
             font-weight: bold;
             color: #2c3e50;
+            margin: 0 10px;
+        }
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .zoom-controls button {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            font-weight: bold;
+        }
+        .zoom-level {
+            font-size: 14px;
+            color: #666;
+            min-width: 60px;
+            text-align: center;
+        }
+        .pdf-viewer {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: auto;
+            max-height: 75vh;
+            background-color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .pdf-page {
+            margin-bottom: 20px;
+            position: relative;
+            display: inline-block;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .pdf-canvas {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+        }
+        .highlight-overlay {
+            position: absolute;
+            background-color: rgba(255, 255, 0, 0.4);
+            border: 2px solid #ffeb3b;
+            border-radius: 3px;
+            pointer-events: none;
+            animation: blink 1.5s ease-in-out 3;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
         }
         .loading-message {
             text-align: center;
@@ -224,18 +262,43 @@
             margin-bottom: 15px;
             color: #7f8c8d;
             font-size: 14px;
+            font-weight: bold;
         }
-        @media (max-width: 768px) {
+        .fullscreen-btn {
+            background-color: #34495e;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .fullscreen-btn:hover {
+            background-color: #2c3e50;
+        }
+        @media (max-width: 1024px) {
             .main-content {
                 flex-direction: column;
             }
+            .results-panel {
+                flex: none;
+                max-height: 40vh;
+            }
+            .pdf-panel {
+                flex: none;
+                min-width: auto;
+            }
+        }
+        @media (max-width: 768px) {
             .container {
                 padding: 15px;
             }
-            .show-program-btn {
-                font-size: 14px;
-                padding: 12px 15px;
-                width: 100%;
+            .pdf-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .zoom-controls {
+                order: 2;
             }
         }
     </style>
@@ -265,8 +328,19 @@
                     </div>
                     <div class="pdf-controls">
                         <button id="prevPage">← Sebelumnya</button>
-                        <span class="pdf-info" id="pageInfo">Halaman <span id="currentPage">1</span> dari <span id="totalPages">1</span></span>
+                        <span class="pdf-info" id="pageInfo">
+                            Halaman <span id="currentPage">1</span> dari <span id="totalPages">1</span>
+                        </span>
                         <button id="nextPage">Selanjutnya →</button>
+                        
+                        <div class="zoom-controls">
+                            <button id="zoomOut">−</button>
+                            <span class="zoom-level" id="zoomLevel">100%</span>
+                            <button id="zoomIn">+</button>
+                        </div>
+                        
+                        <button id="fitWidth" class="fullscreen-btn">Sesuai Lebar</button>
+                        <button id="actualSize" class="fullscreen-btn">Ukuran Asli</button>
                     </div>
                     <div class="pdf-viewer" id="pdfViewer"></div>
                 </div>
@@ -282,7 +356,8 @@
         let totalPages = 0;
         let searchIdpel = '';
         let foundPages = [];
-        let currentFoundIndex = 0;
+        let currentScale = 1.5; // Default scale untuk kualitas lebih baik
+        let devicePixelRatio = window.devicePixelRatio || 1;
         
         // Daftar file PDF yang tersedia
         const availablePDFs = [
@@ -372,7 +447,7 @@
             }
             
             // Tampilkan jumlah hasil
-            let html = `<div class="results-count">Ditemukan ${results.length} data:</div>`;
+            let html = `<div class="results-count">📊 Ditemukan ${results.length} data:</div>`;
             
             results.forEach((item, index) => {
                 html += '<div class="result-item">';
@@ -389,7 +464,7 @@
                 // Tambahkan tombol "Tampilkan Program" jika ada IDPEL
                 if (item.IDPEL && item.IDPEL.trim() !== '') {
                     html += `<button class="show-program-btn" onclick="showProgram('${item.IDPEL}')">
-                        📄 Tampilkan Program untuk IDPEL: ${item.IDPEL}
+                        📄 Tampilkan Program<br>IDPEL: ${item.IDPEL}
                     </button>`;
                 }
                 
@@ -445,7 +520,8 @@
             
             // Reset data
             foundPages = [];
-            currentFoundIndex = 0;
+            currentScale = 1.5; // Reset scale
+            updateZoomLevel();
             
             // Tampilkan loading message
             pdfViewer.innerHTML = '<div class="loading-message">🔍 Mencari IDPEL dalam file PDF...<br>Mohon tunggu sebentar</div>';
@@ -498,35 +574,45 @@
             `;
         }
         
-        // Fungsi untuk render halaman PDF dengan highlight
+        // Fungsi untuk render halaman PDF dengan kualitas tinggi
         async function renderPage(pageNumber) {
             if (!currentPdf) return;
             
             const pdfViewer = document.getElementById('pdfViewer');
-            pdfViewer.innerHTML = '<div class="loading-message">🔄 Memuat halaman...</div>';
+            pdfViewer.innerHTML = '<div class="loading-message">🔄 Memuat halaman dengan kualitas tinggi...</div>';
             
             try {
                 const page = await currentPdf.getPage(pageNumber);
                 
-                // Hitung scale berdasarkan lebar container
-                const container = pdfViewer;
-                const containerWidth = container.clientWidth - 40;
-                const viewport = page.getViewport({ scale: 1 });
-                const scale = Math.min(containerWidth / viewport.width, 2);
+                // Hitung viewport dengan scale yang tinggi untuk kualitas terbaik
+                const baseViewport = page.getViewport({ scale: 1 });
+                const scaledViewport = page.getViewport({ scale: currentScale });
                 
-                const scaledViewport = page.getViewport({ scale: scale });
-                
-                // Buat canvas untuk render PDF
+                // Buat canvas dengan resolusi tinggi
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
-                canvas.height = scaledViewport.height;
-                canvas.width = scaledViewport.width;
+                
+                // Set ukuran canvas dengan device pixel ratio untuk kualitas retina
+                const outputScale = devicePixelRatio;
+                canvas.width = Math.floor(scaledViewport.width * outputScale);
+                canvas.height = Math.floor(scaledViewport.height * outputScale);
+                canvas.style.width = Math.floor(scaledViewport.width) + "px";
+                canvas.style.height = Math.floor(scaledViewport.height) + "px";
+                
+                // Scale context untuk rendering berkualitas tinggi
+                const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+                
+                // Set rendering context dengan kualitas tinggi
+                context.imageSmoothingEnabled = true;
+                context.imageSmoothingQuality = 'high';
+                
                 canvas.className = 'pdf-canvas';
                 
-                // Render halaman
+                // Render halaman dengan kualitas tinggi
                 const renderContext = {
                     canvasContext: context,
-                    viewport: scaledViewport
+                    viewport: scaledViewport,
+                    transform: transform
                 };
                 
                 await page.render(renderContext).promise;
@@ -582,6 +668,46 @@
             }
         }
         
+        // Fungsi untuk update zoom level display
+        function updateZoomLevel() {
+            document.getElementById('zoomLevel').textContent = Math.round(currentScale * 100) + '%';
+        }
+        
+        // Fungsi untuk zoom in
+        function zoomIn() {
+            currentScale = Math.min(currentScale * 1.25, 5); // Maksimal 5x zoom
+            updateZoomLevel();
+            if (currentPdf) renderPage(currentPage);
+        }
+        
+        // Fungsi untuk zoom out
+        function zoomOut() {
+            currentScale = Math.max(currentScale / 1.25, 0.5); // Minimal 0.5x zoom
+            updateZoomLevel();
+            if (currentPdf) renderPage(currentPage);
+        }
+        
+        // Fungsi untuk fit width
+        function fitWidth() {
+            if (currentPdf) {
+                const container = document.getElementById('pdfViewer');
+                const containerWidth = container.clientWidth - 80; // padding
+                currentPdf.getPage(currentPage).then(page => {
+                    const viewport = page.getViewport({ scale: 1 });
+                    currentScale = containerWidth / viewport.width;
+                    updateZoomLevel();
+                    renderPage(currentPage);
+                });
+            }
+        }
+        
+        // Fungsi untuk actual size
+        function actualSize() {
+            currentScale = 1;
+            updateZoomLevel();
+            if (currentPdf) renderPage(currentPage);
+        }
+        
         // Fungsi untuk update informasi halaman
         function updatePageInfo() {
             document.getElementById('currentPage').textContent = currentPage;
@@ -602,6 +728,7 @@
         // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
             loadCSVData();
+            updateZoomLevel();
             
             document.getElementById('searchButton').addEventListener('click', () => {
                 const keyword = document.getElementById('searchInput').value;
@@ -627,6 +754,45 @@
                 if (currentPage < totalPages) {
                     currentPage++;
                     await renderPage(currentPage);
+                }
+            });
+            
+            // Kontrol zoom
+            document.getElementById('zoomIn').addEventListener('click', zoomIn);
+            document.getElementById('zoomOut').addEventListener('click', zoomOut);
+            document.getElementById('fitWidth').addEventListener('click', fitWidth);
+            document.getElementById('actualSize').addEventListener('click', actualSize);
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (document.getElementById('pdfContainer').style.display === 'block') {
+                    switch(e.key) {
+                        case 'ArrowLeft':
+                            if (currentPage > 1) {
+                                currentPage--;
+                                renderPage(currentPage);
+                            }
+                            break;
+                        case 'ArrowRight':
+                            if (currentPage < totalPages) {
+                                currentPage++;
+                                renderPage(currentPage);
+                            }
+                            break;
+                        case '+':
+                        case '=':
+                            if (e.ctrlKey || e.metaKey) {
+                                e.preventDefault();
+                                zoomIn();
+                            }
+                            break;
+                        case '-':
+                            if (e.ctrlKey || e.metaKey) {
+                                e.preventDefault();
+                                zoomOut();
+                            }
+                            break;
+                    }
                 }
             });
         });
