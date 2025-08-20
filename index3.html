@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer - KRN Repository</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .pdf-selector {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .pdf-selector h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 1.3em;
+        }
+
+        .pdf-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .pdf-item {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .pdf-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .pdf-item.active {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .pdf-item h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .pdf-item p {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .viewer-section {
+            padding: 30px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .page-info {
+            background: #f8f9fa;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .pdf-container {
+            text-align: center;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            background: #f8f9fa;
+            min-height: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #pdf-canvas {
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            background: white;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            color: #6c757d;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e9ecef;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: #dc3545;
+            text-align: center;
+            padding: 40px;
+            font-size: 1.1em;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .pdf-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 PDF Viewer</h1>
+            <p>Menampilkan dokumen PDF dari KRN Repository</p>
+        </div>
+
+        <div class="pdf-selector">
+            <h3>Pilih Dokumen PDF:</h3>
+            <div class="pdf-grid" id="pdf-list">
+                <!-- PDF list akan diisi oleh JavaScript -->
+            </div>
+        </div>
+
+        <div class="viewer-section">
+            <div class="controls">
+                <button class="btn" id="prev-btn" disabled>⬅️ Sebelumnya</button>
+                <div class="page-info">
+                    <span id="page-info">Halaman 0 dari 0</span>
+                </div>
+                <button class="btn" id="next-btn" disabled>Selanjutnya ➡️</button>
+                
+                <div class="zoom-controls">
+                    <button class="btn zoom-btn" id="zoom-out">-</button>
+                    <span id="zoom-level">100%</span>
+                    <button class="btn zoom-btn" id="zoom-in">+</button>
+                </div>
+            </div>
+
+            <div class="pdf-container" id="pdf-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Pilih dokumen PDF untuk mulai melihat...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Konfigurasi PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Variabel global
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageCount = 0;
+        let scale = 1.0;
+        let canvas = null;
+        let ctx = null;
+
+        // Daftar PDF yang tersedia (sesuaikan dengan file yang ada di repository)
+        const pdfFiles = [
+            {
+                name: "Dokumen 1",
+                filename: "document1.pdf",
+                description: "Deskripsi dokumen pertama"
+            },
+            {
+                name: "Dokumen 2", 
+                filename: "document2.pdf",
+                description: "Deskripsi dokumen kedua"
+            },
+            {
+                name: "Laporan",
+                filename: "report.pdf", 
+                description: "Laporan lengkap"
+            }
+            // Tambahkan file PDF lainnya sesuai kebutuhan
+        ];
+
+        // Elemen DOM
+        const pdfContainer = document.getElementById('pdf-container');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const pageInfo = document.getElementById('page-info');
+        const zoomInBtn = document.getElementById('zoom-in');
+        const zoomOutBtn = document.getElementById('zoom-out');
+        const zoomLevel = document.getElementById('zoom-level');
+        const pdfList = document.getElementById('pdf-list');
+
+        // Inisialisasi
+        function init() {
+            createPdfList();
+            setupEventListeners();
+        }
+
+        // Membuat daftar PDF
+        function createPdfList() {
+            pdfList.innerHTML = '';
+            pdfFiles.forEach((pdf, index) => {
+                const pdfItem = document.createElement('div');
+                pdfItem.className = 'pdf-item';
+                pdfItem.innerHTML = `
+                    <h4>${pdf.name}</h4>
+                    <p>${pdf.description}</p>
+                `;
+                pdfItem.addEventListener('click', () => loadPDF(pdf.filename, pdfItem));
+                pdfList.appendChild(pdfItem);
+            });
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            prevBtn.addEventListener('click', showPrevPage);
+            nextBtn.addEventListener('click', showNextPage);
+            zoomInBtn.addEventListener('click', zoomIn);
+            zoomOutBtn.addEventListener('click', zoomOut);
+        }
+
+        // Memuat PDF
+        async function loadPDF(filename, selectedItem) {
+            try {
+                // Update UI
+                document.querySelectorAll('.pdf-item').forEach(item => item.classList.remove('active'));
+                selectedItem.classList.add('active');
+                
+                showLoading();
+                
+                // URL ke file PDF di GitHub
+                const url = `https://raw.githubusercontent.com/mashidayat24/krn/3713142d257f6107b6c35248243be8cc82dec8bc/pdf/${filename}`;
+                
+                // Load PDF
+                const loadingTask = pdfjsLib.getDocument(url);
+                pdfDoc = await loadingTask.promise;
+                pageCount = pdfDoc.numPages;
+                pageNum = 1;
+                scale = 1.0;
+                
+                // Buat canvas
+                createCanvas();
+                
+                // Render halaman pertama
+                await renderPage(pageNum);
+                
+                // Update controls
+                updateControls();
+                updateZoomLevel();
+                
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                showError('Gagal memuat PDF. Pastikan file tersedia di repository.');
+            }
+        }
+
+        // Membuat canvas
+        function createCanvas() {
+            pdfContainer.innerHTML = '';
+            canvas = document.createElement('canvas');
+            canvas.id = 'pdf-canvas';
+            ctx = canvas.getContext('2d');
+            pdfContainer.appendChild(canvas);
+        }
+
+        // Render halaman
+        async function renderPage(num) {
+            try {
+                const page = await pdfDoc.getPage(num);
+                const viewport = page.getViewport({ scale: scale });
+                
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                
+                await page.render(renderContext).promise;
+                updatePageInfo();
+                
+            } catch (error) {
+                console.error('Error rendering page:', error);
+                showError('Gagal menampilkan halaman PDF.');
+            }
+        }
+
+        // Halaman sebelumnya
+        function showPrevPage() {
+            if (pageNum <= 1) return;
+            pageNum--;
+            renderPage(pageNum);
+            updateControls();
+        }
+
+        // Halaman selanjutnya
+        function showNextPage() {
+            if (pageNum >= pageCount) return;
+            pageNum++;
+            renderPage(pageNum);
+            updateControls();
+        }
+
+        // Zoom in
+        function zoomIn() {
+            if (scale < 3.0) {
+                scale += 0.25;
+                renderPage(pageNum);
+                updateZoomLevel();
+            }
+        }
+
+        // Zoom out
+        function zoomOut() {
+            if (scale > 0.5) {
+                scale -= 0.25;
+                renderPage(pageNum);
+                updateZoomLevel();
+            }
+        }
+
+        // Update controls
+        function updateControls() {
+            prevBtn.disabled = pageNum <= 1;
+            nextBtn.disabled = pageNum >= pageCount;
+        }
+
+        // Update info halaman
+        function updatePageInfo() {
+            pageInfo.textContent = `Halaman ${pageNum} dari ${pageCount}`;
+        }
+
+        // Update zoom level
+        function updateZoomLevel() {
+            zoomLevel.textContent = `${Math.round(scale * 100)}%`;
+        }
+
+        // Tampilkan loading
+        function showLoading() {
+            pdfContainer.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Memuat PDF...</p>
+                </div>
+            `;
+        }
+
+        // Tampilkan error
+        function showError(message) {
+            pdfContainer.innerHTML = `
+                <div class="error">
+                    <h3>❌ Error</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (!pdfDoc) return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                    showPrevPage();
+                    break;
+                case 'ArrowRight':
+                    showNextPage();
+                    break;
+                case '+':
+                case '=':
+                    zoomIn();
+                    break;
+                case '-':
+                    zoomOut();
+                    break;
+            }
+        });
+
+        // Inisialisasi aplikasi
+        init();
+    </script>
+</body>
+</html>
