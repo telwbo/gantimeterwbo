@@ -16,7 +16,7 @@
             background-color: #f5f5f5;
         }
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             background-color: white;
             padding: 30px;
@@ -56,22 +56,9 @@
         #searchButton:hover {
             background-color: #2980b9;
         }
-        .main-content {
-            display: flex;
-            gap: 20px;
-        }
-        .results-panel {
-            flex: 0 0 350px;
-            min-width: 300px;
-        }
-        .pdf-panel {
-            flex: 1;
-            min-width: 600px;
-        }
         #resultsContainer {
             margin-top: 20px;
-            max-height: 70vh;
-            overflow-y: auto;
+            margin-bottom: 30px;
         }
         .result-item {
             padding: 15px;
@@ -79,6 +66,13 @@
             border-radius: 8px;
             margin-bottom: 15px;
             background-color: #fafafa;
+            display: inline-block;
+            width: calc(50% - 10px);
+            margin-right: 20px;
+            vertical-align: top;
+        }
+        .result-item:nth-child(even) {
+            margin-right: 0;
         }
         .result-item p {
             margin: 5px 0;
@@ -127,42 +121,14 @@
         }
         #pdfContainer {
             display: none;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            background-color: #fafafa;
-        }
-        #pdfContainer h3 {
-            color: #2c3e50;
-            margin-top: 0;
-            margin-bottom: 15px;
-        }
-        .pdf-search-info {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 15px;
-            font-size: 14px;
-        }
-        .pdf-search-info.found {
-            background-color: #d4edda;
-            border-color: #c3e6cb;
-            color: #155724;
-        }
-        .pdf-search-info.not-found {
-            background-color: #f8d7da;
-            border-color: #f5c6cb;
-            color: #721c24;
+            margin-top: 30px;
+            border-top: 2px solid #34495e;
+            padding-top: 30px;
         }
         .pdf-viewer {
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            overflow: auto;
-            max-height: 75vh;
             background-color: white;
             text-align: center;
-            padding: 20px;
+            padding: 0;
         }
         .pdf-page {
             margin-bottom: 20px;
@@ -204,36 +170,19 @@
             padding: 40px 20px;
             font-size: 16px;
         }
-        .pdf-file-info {
-            background-color: #ecf0f1;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            font-size: 14px;
-            color: #2c3e50;
-        }
         .results-count {
             margin-bottom: 15px;
             color: #7f8c8d;
             font-size: 14px;
             font-weight: bold;
         }
-        @media (max-width: 1024px) {
-            .main-content {
-                flex-direction: column;
-            }
-            .results-panel {
-                flex: none;
-                max-height: 40vh;
-            }
-            .pdf-panel {
-                flex: none;
-                min-width: auto;
-            }
-        }
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
+            }
+            .result-item {
+                width: 100%;
+                margin-right: 0;
             }
         }
     </style>
@@ -246,24 +195,10 @@
             <button id="searchButton">Cari</button>
         </div>
         
-        <div class="main-content">
-            <div class="results-panel">
-                <div id="resultsContainer"></div>
-            </div>
-            
-            <div class="pdf-panel">
-                <div id="pdfContainer">
-                    <h3>Program PDF untuk IDPEL</h3>
-                    <div class="pdf-file-info" id="pdfFileInfo">
-                        File: <span id="currentFileName">-</span><br>
-                        IDPEL: <span id="currentIdpel">-</span>
-                    </div>
-                    <div class="pdf-search-info" id="pdfSearchInfo">
-                        Mencari IDPEL dalam dokumen...
-                    </div>
-                    <div class="pdf-viewer" id="pdfViewer"></div>
-                </div>
-            </div>
+        <div id="resultsContainer"></div>
+        
+        <div id="pdfContainer">
+            <div class="pdf-viewer" id="pdfViewer"></div>
         </div>
     </div>
 
@@ -428,13 +363,9 @@
         async function showProgram(idpel) {
             const pdfContainer = document.getElementById('pdfContainer');
             const pdfViewer = document.getElementById('pdfViewer');
-            const currentFileNameSpan = document.getElementById('currentFileName');
-            const currentIdpelSpan = document.getElementById('currentIdpel');
-            const pdfSearchInfo = document.getElementById('pdfSearchInfo');
             
             // Set IDPEL yang dicari
             searchIdpel = idpel;
-            currentIdpelSpan.textContent = idpel;
             
             // Tampilkan container PDF
             pdfContainer.style.display = 'block';
@@ -444,16 +375,11 @@
             foundPages = [];
             
             // Tampilkan loading message
-            pdfViewer.innerHTML = '<div class="loading-message">🔍 Mencari IDPEL dalam file PDF...<br>Mohon tunggu sebentar</div>';
-            pdfSearchInfo.textContent = 'Mencari IDPEL dalam dokumen...';
-            pdfSearchInfo.className = 'pdf-search-info';
+            pdfViewer.innerHTML = '<div class="loading-message">🔍 Mencari dan memuat PDF...<br>Mohon tunggu sebentar</div>';
             
             // Coba setiap file PDF
             for (const pdfFile of availablePDFs) {
                 try {
-                    currentFileNameSpan.textContent = pdfFile.name;
-                    pdfSearchInfo.textContent = `Mencari di: ${pdfFile.name}...`;
-                    
                     // Load PDF
                     const loadingTask = pdfjsLib.getDocument(pdfFile.file);
                     currentPdf = await loadingTask.promise;
@@ -464,10 +390,6 @@
                     if (searchResults.length > 0) {
                         // IDPEL ditemukan!
                         foundPages = searchResults;
-                        
-                        // Update info pencarian
-                        pdfSearchInfo.textContent = `✅ IDPEL "${idpel}" ditemukan di ${searchResults.length} halaman dalam file: ${pdfFile.name}`;
-                        pdfSearchInfo.className = 'pdf-search-info found';
                         
                         // Render semua halaman yang mengandung IDPEL
                         await renderAllPages();
@@ -481,13 +403,9 @@
             }
             
             // Jika sampai sini, berarti IDPEL tidak ditemukan di semua file
-            pdfSearchInfo.textContent = `❌ IDPEL "${idpel}" tidak ditemukan dalam semua file PDF yang tersedia`;
-            pdfSearchInfo.className = 'pdf-search-info not-found';
             pdfViewer.innerHTML = `
                 <div class="error-message">
-                    🔍 IDPEL "${idpel}" tidak ditemukan<br><br>
-                    <small>File yang dicari:</small><br>
-                    ${availablePDFs.map(pdf => `• ${pdf.name}`).join('<br>')}
+                    🔍 IDPEL "${idpel}" tidak ditemukan dalam file PDF yang tersedia
                 </div>
             `;
         }
@@ -497,9 +415,7 @@
             if (!currentPdf || foundPages.length === 0) return;
             
             const pdfViewer = document.getElementById('pdfViewer');
-            pdfViewer.innerHTML = '<div class="loading-message">🔄 Memuat semua halaman dengan kualitas tinggi...</div>';
-            
-            let allPagesHtml = '';
+            pdfViewer.innerHTML = '';
             
             for (const foundPage of foundPages) {
                 try {
@@ -507,7 +423,7 @@
                     
                     // Hitung scale untuk fit width
                     const container = pdfViewer;
-                    const containerWidth = container.clientWidth - 80; // padding dan margin
+                    const containerWidth = container.clientWidth - 40; // padding dan margin
                     const baseViewport = page.getViewport({ scale: 1 });
                     const scale = containerWidth / baseViewport.width;
                     
@@ -545,32 +461,12 @@
                     // Buat container untuk halaman
                     const pageDiv = document.createElement('div');
                     pageDiv.className = 'pdf-page';
-                    pageDiv.style.marginBottom = '30px';
-                    
-                    // Tambahkan header halaman
-                    const pageHeader = document.createElement('div');
-                    pageHeader.style.cssText = `
-                        background-color: #34495e;
-                        color: white;
-                        padding: 10px;
-                        margin-bottom: 10px;
-                        border-radius: 4px;
-                        font-weight: bold;
-                        text-align: center;
-                        font-size: 14px;
-                    `;
-                    pageHeader.textContent = `Halaman ${foundPage.page} - IDPEL: ${searchIdpel}`;
-                    
-                    pageDiv.appendChild(pageHeader);
                     pageDiv.appendChild(canvas);
                     
                     // Highlight IDPEL di halaman ini
                     await highlightTextInPage(page, pageDiv, scaledViewport, searchIdpel);
                     
                     // Tampilkan halaman
-                    if (pdfViewer.innerHTML.includes('loading-message')) {
-                        pdfViewer.innerHTML = '';
-                    }
                     pdfViewer.appendChild(pageDiv);
                     
                 } catch (error) {
@@ -596,7 +492,7 @@
                         const top = viewport.height - transform[5] - item.height;
                         
                         highlight.style.left = left + 'px';
-                        highlight.style.top = (top + 40) + 'px'; // +40 untuk header
+                        highlight.style.top = top + 'px';
                         highlight.style.width = item.width + 'px';
                         highlight.style.height = item.height + 'px';
                         
