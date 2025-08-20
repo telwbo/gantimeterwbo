@@ -155,52 +155,6 @@
             border-color: #f5c6cb;
             color: #721c24;
         }
-        .pdf-controls {
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .pdf-controls button {
-            padding: 8px 15px;
-            border: 1px solid #ddd;
-            background-color: white;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 14px;
-            transition: background-color 0.2s;
-        }
-        .pdf-controls button:hover:not(:disabled) {
-            background-color: #f0f0f0;
-        }
-        .pdf-controls button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .pdf-info {
-            font-weight: bold;
-            color: #2c3e50;
-            margin: 0 10px;
-        }
-        .zoom-controls {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .zoom-controls button {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            font-weight: bold;
-        }
-        .zoom-level {
-            font-size: 14px;
-            color: #666;
-            min-width: 60px;
-            text-align: center;
-        }
         .pdf-viewer {
             border: 1px solid #ccc;
             border-radius: 4px;
@@ -219,7 +173,7 @@
             overflow: hidden;
         }
         .pdf-canvas {
-            max-width: 100%;
+            width: 100%;
             height: auto;
             display: block;
             image-rendering: -webkit-optimize-contrast;
@@ -264,18 +218,6 @@
             font-size: 14px;
             font-weight: bold;
         }
-        .fullscreen-btn {
-            background-color: #34495e;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .fullscreen-btn:hover {
-            background-color: #2c3e50;
-        }
         @media (max-width: 1024px) {
             .main-content {
                 flex-direction: column;
@@ -292,13 +234,6 @@
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
-            }
-            .pdf-controls {
-                flex-direction: column;
-                gap: 10px;
-            }
-            .zoom-controls {
-                order: 2;
             }
         }
     </style>
@@ -326,22 +261,6 @@
                     <div class="pdf-search-info" id="pdfSearchInfo">
                         Mencari IDPEL dalam dokumen...
                     </div>
-                    <div class="pdf-controls">
-                        <button id="prevPage">← Sebelumnya</button>
-                        <span class="pdf-info" id="pageInfo">
-                            Halaman <span id="currentPage">1</span> dari <span id="totalPages">1</span>
-                        </span>
-                        <button id="nextPage">Selanjutnya →</button>
-                        
-                        <div class="zoom-controls">
-                            <button id="zoomOut">−</button>
-                            <span class="zoom-level" id="zoomLevel">100%</span>
-                            <button id="zoomIn">+</button>
-                        </div>
-                        
-                        <button id="fitWidth" class="fullscreen-btn">Sesuai Lebar</button>
-                        <button id="actualSize" class="fullscreen-btn">Ukuran Asli</button>
-                    </div>
                     <div class="pdf-viewer" id="pdfViewer"></div>
                 </div>
             </div>
@@ -352,11 +271,8 @@
         // Variabel global
         let csvData = [];
         let currentPdf = null;
-        let currentPage = 1;
-        let totalPages = 0;
         let searchIdpel = '';
         let foundPages = [];
-        let currentScale = 1.5; // Default scale untuk kualitas lebih baik
         let devicePixelRatio = window.devicePixelRatio || 1;
         
         // Daftar file PDF yang tersedia
@@ -413,6 +329,12 @@
         function performSearch(keyword) {
             if (keyword.trim() === "") {
                 alert('Silakan masukkan kata kunci pencarian');
+                return;
+            }
+            
+            // Refresh halaman sebelum pencarian baru
+            if (currentPdf) {
+                location.reload();
                 return;
             }
             
@@ -520,8 +442,6 @@
             
             // Reset data
             foundPages = [];
-            currentScale = 1.5; // Reset scale
-            updateZoomLevel();
             
             // Tampilkan loading message
             pdfViewer.innerHTML = '<div class="loading-message">🔍 Mencari IDPEL dalam file PDF...<br>Mohon tunggu sebentar</div>';
@@ -537,7 +457,6 @@
                     // Load PDF
                     const loadingTask = pdfjsLib.getDocument(pdfFile.file);
                     currentPdf = await loadingTask.promise;
-                    totalPages = currentPdf.numPages;
                     
                     // Cari IDPEL dalam PDF
                     const searchResults = await searchInPDF(currentPdf, idpel);
@@ -550,9 +469,8 @@
                         pdfSearchInfo.textContent = `✅ IDPEL "${idpel}" ditemukan di ${searchResults.length} halaman dalam file: ${pdfFile.name}`;
                         pdfSearchInfo.className = 'pdf-search-info found';
                         
-                        // Tampilkan halaman pertama yang mengandung IDPEL
-                        currentPage = searchResults[0].page;
-                        await renderPage(currentPage);
+                        // Render semua halaman yang mengandung IDPEL
+                        await renderAllPages();
                         
                         return; // Keluar dari loop jika sudah ditemukan
                     }
@@ -574,68 +492,90 @@
             `;
         }
         
-        // Fungsi untuk render halaman PDF dengan kualitas tinggi
-        async function renderPage(pageNumber) {
-            if (!currentPdf) return;
+        // Fungsi untuk render semua halaman yang mengandung IDPEL
+        async function renderAllPages() {
+            if (!currentPdf || foundPages.length === 0) return;
             
             const pdfViewer = document.getElementById('pdfViewer');
-            pdfViewer.innerHTML = '<div class="loading-message">🔄 Memuat halaman dengan kualitas tinggi...</div>';
+            pdfViewer.innerHTML = '<div class="loading-message">🔄 Memuat semua halaman dengan kualitas tinggi...</div>';
             
-            try {
-                const page = await currentPdf.getPage(pageNumber);
-                
-                // Hitung viewport dengan scale yang tinggi untuk kualitas terbaik
-                const baseViewport = page.getViewport({ scale: 1 });
-                const scaledViewport = page.getViewport({ scale: currentScale });
-                
-                // Buat canvas dengan resolusi tinggi
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                
-                // Set ukuran canvas dengan device pixel ratio untuk kualitas retina
-                const outputScale = devicePixelRatio;
-                canvas.width = Math.floor(scaledViewport.width * outputScale);
-                canvas.height = Math.floor(scaledViewport.height * outputScale);
-                canvas.style.width = Math.floor(scaledViewport.width) + "px";
-                canvas.style.height = Math.floor(scaledViewport.height) + "px";
-                
-                // Scale context untuk rendering berkualitas tinggi
-                const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
-                
-                // Set rendering context dengan kualitas tinggi
-                context.imageSmoothingEnabled = true;
-                context.imageSmoothingQuality = 'high';
-                
-                canvas.className = 'pdf-canvas';
-                
-                // Render halaman dengan kualitas tinggi
-                const renderContext = {
-                    canvasContext: context,
-                    viewport: scaledViewport,
-                    transform: transform
-                };
-                
-                await page.render(renderContext).promise;
-                
-                // Tampilkan canvas
-                pdfViewer.innerHTML = '';
-                const pageDiv = document.createElement('div');
-                pageDiv.className = 'pdf-page';
-                pageDiv.appendChild(canvas);
-                pdfViewer.appendChild(pageDiv);
-                
-                // Highlight IDPEL jika ditemukan di halaman ini
-                const foundInCurrentPage = foundPages.find(fp => fp.page === pageNumber);
-                if (foundInCurrentPage && searchIdpel) {
+            let allPagesHtml = '';
+            
+            for (const foundPage of foundPages) {
+                try {
+                    const page = await currentPdf.getPage(foundPage.page);
+                    
+                    // Hitung scale untuk fit width
+                    const container = pdfViewer;
+                    const containerWidth = container.clientWidth - 80; // padding dan margin
+                    const baseViewport = page.getViewport({ scale: 1 });
+                    const scale = containerWidth / baseViewport.width;
+                    
+                    const scaledViewport = page.getViewport({ scale: scale });
+                    
+                    // Buat canvas dengan resolusi tinggi
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    
+                    // Set ukuran canvas dengan device pixel ratio untuk kualitas retina
+                    const outputScale = devicePixelRatio;
+                    canvas.width = Math.floor(scaledViewport.width * outputScale);
+                    canvas.height = Math.floor(scaledViewport.height * outputScale);
+                    canvas.style.width = Math.floor(scaledViewport.width) + "px";
+                    canvas.style.height = Math.floor(scaledViewport.height) + "px";
+                    
+                    // Scale context untuk rendering berkualitas tinggi
+                    const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+                    
+                    // Set rendering context dengan kualitas tinggi
+                    context.imageSmoothingEnabled = true;
+                    context.imageSmoothingQuality = 'high';
+                    
+                    canvas.className = 'pdf-canvas';
+                    
+                    // Render halaman dengan kualitas tinggi
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: scaledViewport,
+                        transform: transform
+                    };
+                    
+                    await page.render(renderContext).promise;
+                    
+                    // Buat container untuk halaman
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = 'pdf-page';
+                    pageDiv.style.marginBottom = '30px';
+                    
+                    // Tambahkan header halaman
+                    const pageHeader = document.createElement('div');
+                    pageHeader.style.cssText = `
+                        background-color: #34495e;
+                        color: white;
+                        padding: 10px;
+                        margin-bottom: 10px;
+                        border-radius: 4px;
+                        font-weight: bold;
+                        text-align: center;
+                        font-size: 14px;
+                    `;
+                    pageHeader.textContent = `Halaman ${foundPage.page} - IDPEL: ${searchIdpel}`;
+                    
+                    pageDiv.appendChild(pageHeader);
+                    pageDiv.appendChild(canvas);
+                    
+                    // Highlight IDPEL di halaman ini
                     await highlightTextInPage(page, pageDiv, scaledViewport, searchIdpel);
+                    
+                    // Tampilkan halaman
+                    if (pdfViewer.innerHTML.includes('loading-message')) {
+                        pdfViewer.innerHTML = '';
+                    }
+                    pdfViewer.appendChild(pageDiv);
+                    
+                } catch (error) {
+                    console.error(`Error rendering page ${foundPage.page}:`, error);
                 }
-                
-                // Update kontrol halaman
-                updatePageControls();
-                
-            } catch (error) {
-                console.error('Error rendering page:', error);
-                pdfViewer.innerHTML = `<div class="error-message">❌ Gagal memuat halaman ${pageNumber}</div>`;
             }
         }
         
@@ -656,7 +596,7 @@
                         const top = viewport.height - transform[5] - item.height;
                         
                         highlight.style.left = left + 'px';
-                        highlight.style.top = top + 'px';
+                        highlight.style.top = (top + 40) + 'px'; // +40 untuk header
                         highlight.style.width = item.width + 'px';
                         highlight.style.height = item.height + 'px';
                         
@@ -668,67 +608,9 @@
             }
         }
         
-        // Fungsi untuk update zoom level display
-        function updateZoomLevel() {
-            document.getElementById('zoomLevel').textContent = Math.round(currentScale * 100) + '%';
-        }
-        
-        // Fungsi untuk zoom in
-        function zoomIn() {
-            currentScale = Math.min(currentScale * 1.25, 5); // Maksimal 5x zoom
-            updateZoomLevel();
-            if (currentPdf) renderPage(currentPage);
-        }
-        
-        // Fungsi untuk zoom out
-        function zoomOut() {
-            currentScale = Math.max(currentScale / 1.25, 0.5); // Minimal 0.5x zoom
-            updateZoomLevel();
-            if (currentPdf) renderPage(currentPage);
-        }
-        
-        // Fungsi untuk fit width
-        function fitWidth() {
-            if (currentPdf) {
-                const container = document.getElementById('pdfViewer');
-                const containerWidth = container.clientWidth - 80; // padding
-                currentPdf.getPage(currentPage).then(page => {
-                    const viewport = page.getViewport({ scale: 1 });
-                    currentScale = containerWidth / viewport.width;
-                    updateZoomLevel();
-                    renderPage(currentPage);
-                });
-            }
-        }
-        
-        // Fungsi untuk actual size
-        function actualSize() {
-            currentScale = 1;
-            updateZoomLevel();
-            if (currentPdf) renderPage(currentPage);
-        }
-        
-        // Fungsi untuk update informasi halaman
-        function updatePageInfo() {
-            document.getElementById('currentPage').textContent = currentPage;
-            document.getElementById('totalPages').textContent = totalPages;
-        }
-        
-        // Fungsi untuk update kontrol halaman
-        function updatePageControls() {
-            const prevBtn = document.getElementById('prevPage');
-            const nextBtn = document.getElementById('nextPage');
-            
-            prevBtn.disabled = currentPage <= 1;
-            nextBtn.disabled = currentPage >= totalPages;
-            
-            updatePageInfo();
-        }
-        
         // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
             loadCSVData();
-            updateZoomLevel();
             
             document.getElementById('searchButton').addEventListener('click', () => {
                 const keyword = document.getElementById('searchInput').value;
@@ -739,60 +621,6 @@
                 if (e.key === 'Enter') {
                     const keyword = document.getElementById('searchInput').value;
                     performSearch(keyword);
-                }
-            });
-            
-            // Kontrol navigasi PDF
-            document.getElementById('prevPage').addEventListener('click', async () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    await renderPage(currentPage);
-                }
-            });
-            
-            document.getElementById('nextPage').addEventListener('click', async () => {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    await renderPage(currentPage);
-                }
-            });
-            
-            // Kontrol zoom
-            document.getElementById('zoomIn').addEventListener('click', zoomIn);
-            document.getElementById('zoomOut').addEventListener('click', zoomOut);
-            document.getElementById('fitWidth').addEventListener('click', fitWidth);
-            document.getElementById('actualSize').addEventListener('click', actualSize);
-            
-            // Keyboard shortcuts
-            document.addEventListener('keydown', (e) => {
-                if (document.getElementById('pdfContainer').style.display === 'block') {
-                    switch(e.key) {
-                        case 'ArrowLeft':
-                            if (currentPage > 1) {
-                                currentPage--;
-                                renderPage(currentPage);
-                            }
-                            break;
-                        case 'ArrowRight':
-                            if (currentPage < totalPages) {
-                                currentPage++;
-                                renderPage(currentPage);
-                            }
-                            break;
-                        case '+':
-                        case '=':
-                            if (e.ctrlKey || e.metaKey) {
-                                e.preventDefault();
-                                zoomIn();
-                            }
-                            break;
-                        case '-':
-                            if (e.ctrlKey || e.metaKey) {
-                                e.preventDefault();
-                                zoomOut();
-                            }
-                            break;
-                    }
                 }
             });
         });
