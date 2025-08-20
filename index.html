@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pencarian Data VKRN</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -15,7 +16,7 @@
             background-color: #f5f5f5;
         }
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             background-color: white;
             padding: 30px;
@@ -55,21 +56,122 @@
         #searchButton:hover {
             background-color: #2980b9;
         }
+        .main-content {
+            display: flex;
+            gap: 20px;
+        }
+        .results-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        .pdf-panel {
+            flex: 1;
+            min-width: 400px;
+        }
         #resultsContainer {
             margin-top: 20px;
         }
         .result-item {
             padding: 15px;
-            border-bottom: 1px solid #eee;
-            margin-bottom: 10px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background-color: #fafafa;
         }
-        .result-item:last-child {
-            border-bottom: none;
+        .result-item p {
+            margin: 5px 0;
+            word-wrap: break-word;
+        }
+        .result-item strong {
+            color: #2c3e50;
         }
         .no-results {
             text-align: center;
             color: #7f8c8d;
             padding: 20px;
+        }
+        .show-program-btn {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+        }
+        .show-program-btn:hover {
+            background-color: #229954;
+        }
+        .show-program-btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        #pdfContainer {
+            display: none;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #fafafa;
+        }
+        #pdfContainer h3 {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .pdf-viewer {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: auto;
+            max-height: 600px;
+            background-color: white;
+        }
+        .pdf-page {
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .pdf-canvas {
+            border-bottom: 1px solid #eee;
+            max-width: 100%;
+            height: auto;
+        }
+        .pdf-controls {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .pdf-controls button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            background-color: white;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .pdf-controls button:hover {
+            background-color: #f0f0f0;
+        }
+        .pdf-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .loading-message {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 20px;
+        }
+        .error-message {
+            text-align: center;
+            color: #e74c3c;
+            padding: 20px;
+        }
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            .container {
+                padding: 15px;
+            }
         }
     </style>
 </head>
@@ -80,12 +182,35 @@
             <input type="text" id="searchInput" placeholder="Masukkan kata kunci pencarian...">
             <button id="searchButton">Cari</button>
         </div>
-        <div id="resultsContainer"></div>
+        
+        <div class="main-content">
+            <div class="results-panel">
+                <div id="resultsContainer"></div>
+            </div>
+            
+            <div class="pdf-panel">
+                <div id="pdfContainer">
+                    <h3 id="pdfTitle">Program untuk IDPEL: <span id="currentIdpel"></span></h3>
+                    <div class="pdf-controls">
+                        <button id="prevPage">Halaman Sebelumnya</button>
+                        <span id="pageInfo">Halaman <span id="currentPage">1</span> dari <span id="totalPages">1</span></span>
+                        <button id="nextPage">Halaman Selanjutnya</button>
+                    </div>
+                    <div class="pdf-viewer" id="pdfViewer"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Variabel untuk menyimpan data CSV
+        // Variabel global
         let csvData = [];
+        let currentPdf = null;
+        let currentPage = 1;
+        let totalPages = 0;
+        
+        // Set up PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
         // Fungsi untuk memuat data CSV
         async function loadCSVData() {
@@ -95,20 +220,22 @@
                 
                 // Parse CSV menjadi array of objects
                 const lines = csvText.split('\n');
-                const headers = lines[0].split(',');
+                const headers = lines[0].split(',').map(h => h.trim());
                 
                 for (let i = 1; i < lines.length; i++) {
                     const currentLine = lines[i].split(',');
-                    if (currentLine.length === headers.length) {
+                    if (currentLine.length === headers.length && currentLine[0].trim() !== '') {
                         const obj = {};
                         for (let j = 0; j < headers.length; j++) {
-                            obj[headers[j].trim()] = currentLine[j].trim();
+                            obj[headers[j]] = currentLine[j].trim();
                         }
                         csvData.push(obj);
                     }
                 }
+                console.log('Data CSV dimuat:', csvData.length, 'records');
             } catch (error) {
                 console.error('Gagal memuat file CSV:', error);
+                alert('Gagal memuat file CSV. Pastikan file vkrn.csv ada di folder yang sama.');
             }
         }
         
@@ -144,19 +271,150 @@
             
             if (results.length === 0) {
                 resultsContainer.innerHTML = '<div class="no-results">Tidak ditemukan data yang sesuai</div>';
+                // Sembunyikan panel PDF
+                document.getElementById('pdfContainer').style.display = 'none';
                 return;
             }
             
             let html = '';
-            results.forEach(item => {
+            results.forEach((item, index) => {
                 html += '<div class="result-item">';
                 for (const key in item) {
                     html += `<p><strong>${key}:</strong> ${item[key]}</p>`;
                 }
+                
+                // Tambahkan tombol "Tampilkan Program" jika ada IDPEL
+                if (item.IDPEL && item.IDPEL.trim() !== '') {
+                    html += `<button class="show-program-btn" onclick="showProgram('${item.IDPEL}')">Tampilkan Program</button>`;
+                }
+                
                 html += '</div>';
             });
             
             resultsContainer.innerHTML = html;
+        }
+        
+        // Fungsi untuk menampilkan program PDF
+        async function showProgram(idpel) {
+            const pdfContainer = document.getElementById('pdfContainer');
+            const pdfViewer = document.getElementById('pdfViewer');
+            const currentIdpelSpan = document.getElementById('currentIdpel');
+            
+            // Update IDPEL yang sedang ditampilkan
+            currentIdpelSpan.textContent = idpel;
+            
+            // Tampilkan container PDF
+            pdfContainer.style.display = 'block';
+            
+            // Tampilkan loading message
+            pdfViewer.innerHTML = '<div class="loading-message">Memuat PDF...</div>';
+            
+            try {
+                // Coba beberapa format nama file yang mungkin
+                const possiblePaths = [
+                    `pdf/${idpel}.pdf`,
+                    `pdf/${idpel.toUpperCase()}.pdf`,
+                    `pdf/${idpel.toLowerCase()}.pdf`,
+                    `pdf/IDPEL_${idpel}.pdf`,
+                    `pdf/idpel_${idpel}.pdf`
+                ];
+                
+                let pdfPath = null;
+                
+                // Coba setiap path sampai menemukan file yang ada
+                for (const path of possiblePaths) {
+                    try {
+                        const response = await fetch(path);
+                        if (response.ok) {
+                            pdfPath = path;
+                            break;
+                        }
+                    } catch (e) {
+                        // Lanjut ke path berikutnya
+                        continue;
+                    }
+                }
+                
+                if (!pdfPath) {
+                    throw new Error(`File PDF tidak ditemukan untuk IDPEL: ${idpel}`);
+                }
+                
+                // Load PDF menggunakan PDF.js
+                const loadingTask = pdfjsLib.getDocument(pdfPath);
+                currentPdf = await loadingTask.promise;
+                totalPages = currentPdf.numPages;
+                currentPage = 1;
+                
+                // Update informasi halaman
+                updatePageInfo();
+                
+                // Render halaman pertama
+                await renderPage(currentPage);
+                
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                pdfViewer.innerHTML = `<div class="error-message">Gagal memuat PDF untuk IDPEL: ${idpel}<br>Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Fungsi untuk render halaman PDF
+        async function renderPage(pageNumber) {
+            if (!currentPdf) return;
+            
+            const pdfViewer = document.getElementById('pdfViewer');
+            pdfViewer.innerHTML = '<div class="loading-message">Memuat halaman...</div>';
+            
+            try {
+                const page = await currentPdf.getPage(pageNumber);
+                const scale = 1.5;
+                const viewport = page.getViewport({ scale: scale });
+                
+                // Buat canvas untuk render PDF
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                canvas.className = 'pdf-canvas';
+                
+                // Render halaman
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                
+                await page.render(renderContext).promise;
+                
+                // Tampilkan canvas
+                pdfViewer.innerHTML = '';
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'pdf-page';
+                pageDiv.appendChild(canvas);
+                pdfViewer.appendChild(pageDiv);
+                
+                // Update kontrol halaman
+                updatePageControls();
+                
+            } catch (error) {
+                console.error('Error rendering page:', error);
+                pdfViewer.innerHTML = `<div class="error-message">Gagal memuat halaman ${pageNumber}</div>`;
+            }
+        }
+        
+        // Fungsi untuk update informasi halaman
+        function updatePageInfo() {
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('totalPages').textContent = totalPages;
+        }
+        
+        // Fungsi untuk update kontrol halaman
+        function updatePageControls() {
+            const prevBtn = document.getElementById('prevPage');
+            const nextBtn = document.getElementById('nextPage');
+            
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+            
+            updatePageInfo();
         }
         
         // Event listeners
@@ -174,7 +432,23 @@
                     performSearch(keyword);
                 }
             });
+            
+            // Kontrol navigasi PDF
+            document.getElementById('prevPage').addEventListener('click', async () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    await renderPage(currentPage);
+                }
+            });
+            
+            document.getElementById('nextPage').addEventListener('click', async () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    await renderPage(currentPage);
+                }
+            });
         });
     </script>
 </body>
 </html>
+
