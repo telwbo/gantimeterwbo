@@ -363,7 +363,7 @@
     </div>
 
     <div class="container">
-        <h1>Pencarian Data VKRN</h1>
+        <h1>VKRN ULP Wonosobo</h1>
         
         <!-- Status sistem -->
         <div class="system-status" id="systemStatus">
@@ -382,7 +382,7 @@
         
         <!-- Container pencarian awal -->
         <div class="search-container" id="searchContainer">
-            <input type="text" id="searchInput" placeholder="Masukkan kata kunci pencarian...">
+            <input type="text" id="searchInput" placeholder="Masukkan pencarian...">
             <button id="searchButton">Cari</button>
         </div>
         
@@ -944,7 +944,7 @@
                 // Tambahkan tombol "Tampilkan Program" jika ada IDPEL
                 if (item.IDPEL && item.IDPEL.trim() !== '') {
                     html += `<button class="show-program-btn instant" onclick="showProgram('${item.IDPEL}')">
-                        📄 Tampilkan Program (Instan)<br>IDPEL: ${item.IDPEL}
+                        📄 Tampilkan Program<br>IDPEL: ${item.IDPEL}
                     </button>`;
                 }
                 
