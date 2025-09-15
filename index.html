@@ -6,13 +6,297 @@
     <title>Pencarian Data VKRN</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        /* ...[Tetap gunakan style lama di sini, tidak ada perubahan]... */
-        /* Gunakan style dari versi Anda sebelumnya */
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .initialization-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .initialization-content {
+            background-color: white;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .init-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #ecf0f1;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        .init-text {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .init-subtext {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        .search-container {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .search-container.hidden {
+            display: none;
+        }
+        #searchInput {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px 0 0 5px;
+            font-size: 16px;
+            outline: none;
+        }
+        #searchInput:focus {
+            border-color: #3498db;
+        }
+        #searchButton {
+            padding: 12px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 0 5px 5px 0;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        #searchButton:hover {
+            background-color: #2980b9;
+        }
+        .search-again-container {
+            display: none;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .search-again-container.show {
+            display: block;
+        }
+        .search-again-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .search-again-btn:hover {
+            background-color: #c0392b;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .system-status {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+        .system-status.show {
+            display: block;
+        }
+        .system-status.error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        #resultsContainer {
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+        .result-item {
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background-color: #fafafa;
+            display: inline-block;
+            width: calc(50% - 10px);
+            margin-right: 20px;
+            vertical-align: top;
+        }
+        .result-item:nth-child(even) {
+            margin-right: 0;
+        }
+        .result-item p {
+            margin: 5px 0;
+            word-wrap: break-word;
+            font-size: 14px;
+        }
+        .result-item strong {
+            color: #2c3e50;
+        }
+        .result-item .idpel {
+            background-color: #e8f6ff;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 3px solid #3498db;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .no-results {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 20px;
+        }
+        .show-program-btn {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 10px;
+            width: 100%;
+        }
+        .show-program-btn:hover {
+            background-color: #229954;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .show-program-btn.instant {
+            background-color: #f39c12;
+            position: relative;
+        }
+        .show-program-btn.instant:hover {
+            background-color: #d68910;
+        }
+        .show-program-btn.instant::after {
+            content: "⚡";
+            position: absolute;
+            top: 2px;
+            right: 5px;
+            font-size: 12px;
+        }
+        #pdfContainer {
+            display: none;
+            margin-top: 30px;
+            border-top: 2px solid #34495e;
+            padding-top: 30px;
+        }
+        .pdf-viewer {
+            background-color: white;
+            text-align: center;
+            padding: 0;
+        }
+        .pdf-page {
+            margin-bottom: 20px;
+            position: relative;
+            display: inline-block;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .pdf-canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+        }
+        .highlight-overlay {
+            position: absolute;
+            background-color: rgba(255, 255, 0, 0.4);
+            border: 2px solid #ffeb3b;
+            border-radius: 3px;
+            pointer-events: none;
+            animation: blink 1.5s ease-in-out 3;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .results-count {
+            margin-bottom: 15px;
+            color: #7f8c8d;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            .result-item {
+                width: 100%;
+                margin-right: 0;
+            }
+            .initialization-content {
+                padding: 30px 20px;
+            }
+        }
     </style>
 </head>
 <body>
     <!-- Overlay inisialisasi -->
-    <div class="initialization-overlay" id="initOverlay" style="display:none">
+    <div class="initialization-overlay" id="initOverlay">
         <div class="initialization-content">
             <div class="init-spinner"></div>
             <div class="init-text">Memuat Sistem Pencarian</div>
@@ -25,25 +309,11 @@
     </div>
 
     <div class="container">
-        <h1 style="margin-bottom:10px;">Pencarian Data VKRN</h1>
-        <!-- Tombol refresh index di atas kolom pencarian -->
-        <button id="refreshIndexBtn" style="
-            display:inline-block;
-            background:#3498db;
-            color:white;
-            border:none;
-            border-radius:50%;
-            width:45px;height:45px;
-            font-size:25px;
-            cursor:pointer;
-            margin-bottom:15px;
-            box-shadow:0 2px 6px rgba(0,0,0,0.1);
-            " title="Refresh Index">🔄</button>
-        <span style="margin-left:10px;color:#7f8c8d;font-size:15px;">Klik untuk memulai indexing data</span>
+        <h1>Pencarian Data VKRN</h1>
         
         <!-- Status sistem -->
-        <div class="system-status show error" id="systemStatus">
-            ⚠️ Sistem belum di-index. Klik tombol 🔄 untuk memulai indexing data.
+        <div class="system-status" id="systemStatus">
+            ✅ Sistem siap! Database PDF telah diindex untuk pencarian instan.
         </div>
         
         <!-- Container pencarian awal -->
@@ -58,6 +328,7 @@
         </div>
         
         <div id="resultsContainer"></div>
+        
         <div id="pdfContainer">
             <div class="pdf-viewer" id="pdfViewer"></div>
         </div>
@@ -80,57 +351,106 @@
         
         // Daftar file PDF yang tersedia
         const availablePDFs = [
-            { file: 'pdf/CR_PK_TOKEN_LPB_kolektif-KRN KEJAJAR.pdf', name: 'CR PK TOKEN LPB Kolektif KRN KEJAJAR', id: 'pdf1' },
-            { file: 'pdf/KRN KEJAJAR.pdf', name: 'KRN KEJAJAR', id: 'pdf2' },
-            { file: 'pdf/KRN KEJAJAR160824.PDF', name: 'KRN KEJAJAR 160824', id: 'pdf3' },
-            { file: 'pdf/TOKEN JAMAL 160824.pdf', name: 'TOKEN JAMAL 160824', id: 'pdf4' }
+            { 
+                file: 'pdf/CR_PK_TOKEN_LPB_kolektif-KRN KEJAJAR.pdf', 
+                name: 'CR PK TOKEN LPB Kolektif KRN KEJAJAR',
+                id: 'pdf1'
+            },
+            { 
+                file: 'pdf/KRN KEJAJAR.pdf', 
+                name: 'KRN KEJAJAR',
+                id: 'pdf2'
+            },
+            { 
+                file: 'pdf/KRN KEJAJAR160824.PDF', 
+                name: 'KRN KEJAJAR 160824',
+                id: 'pdf3'
+            },
+            { 
+                file: 'pdf/TOKEN JAMAL 160824.pdf', 
+                name: 'TOKEN JAMAL 160824',
+                id: 'pdf4'
+            }
         ];
         
+        // Set up PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
+        // Fungsi untuk update progress bar
         function updateProgress(percentage, text) {
             document.getElementById('progressFill').style.width = percentage + '%';
             document.getElementById('progressText').textContent = `${percentage}% - ${text}`;
         }
         
+        // Fungsi untuk menampilkan status sistem
         function showSystemStatus(message, isError = false) {
             const systemStatus = document.getElementById('systemStatus');
             systemStatus.textContent = message;
             systemStatus.className = isError ? 'system-status show error' : 'system-status show';
+            
             if (!isError) {
-                setTimeout(() => { systemStatus.classList.remove('show'); }, 5000);
+                setTimeout(() => {
+                    systemStatus.classList.remove('show');
+                }, 5000);
             }
         }
         
+        // Fungsi untuk inisialisasi sistem (pre-load dan index semua PDF)
         async function initializeSystem() {
-            document.getElementById('initOverlay').style.display = 'flex';
+            console.log('Memulai inisialisasi sistem...');
             updateProgress(5, 'Memuat data CSV...');
+            
             try {
+                // Load CSV data terlebih dahulu
                 await loadCSVData();
+                
                 let totalProgress = 0;
-                const progressPerPDF = 90 / availablePDFs.length;
+                const progressPerPDF = 90 / availablePDFs.length; // 90% untuk PDF, 5% untuk CSV, 5% untuk finalisasi
+                
+                // Pre-load dan index semua PDF
                 for (let i = 0; i < availablePDFs.length; i++) {
                     const pdfInfo = availablePDFs[i];
                     updateProgress(10 + (i * progressPerPDF), `Memuat ${pdfInfo.name}...`);
+                    
                     try {
+                        // Load PDF
                         const loadingTask = pdfjsLib.getDocument(pdfInfo.file);
                         const pdf = await loadingTask.promise;
-                        pdfDatabase.set(pdfInfo.id, { pdf: pdf, info: pdfInfo, totalPages: pdf.numPages });
+                        
+                        // Simpan PDF ke database
+                        pdfDatabase.set(pdfInfo.id, {
+                            pdf: pdf,
+                            info: pdfInfo,
+                            totalPages: pdf.numPages
+                        });
+                        
                         updateProgress(10 + (i * progressPerPDF) + (progressPerPDF * 0.3), `Mengindex teks ${pdfInfo.name}...`);
+                        
+                        // Index semua teks dalam PDF
                         await indexPDFText(pdf, pdfInfo);
+                        
                         updateProgress(10 + ((i + 1) * progressPerPDF), `Selesai memuat ${pdfInfo.name}`);
+                        
                     } catch (error) {
                         console.error(`Error loading ${pdfInfo.file}:`, error);
+                        // Lanjutkan dengan PDF berikutnya
                     }
                 }
+                
                 updateProgress(95, 'Finalisasi sistem...');
+                
+                // Simpan index ke localStorage untuk akses lebih cepat di masa depan
                 await saveIndexToStorage();
+                
                 updateProgress(100, 'Sistem siap!');
+                
+                // Tunggu sebentar lalu sembunyikan overlay
                 setTimeout(() => {
                     document.getElementById('initOverlay').style.display = 'none';
                     isSystemReady = true;
                     showSystemStatus(`✅ Sistem siap! ${availablePDFs.length} file PDF telah diindex. Database berisi ${textIndex.size} entri pencarian.`);
                 }, 1000);
+                
             } catch (error) {
                 console.error('Error during initialization:', error);
                 updateProgress(100, 'Error inisialisasi');
@@ -141,43 +461,78 @@
             }
         }
         
+        // Fungsi untuk mengindex teks dalam PDF
         async function indexPDFText(pdf, pdfInfo) {
             const totalPages = pdf.numPages;
+            
             for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
                 try {
                     const page = await pdf.getPage(pageNum);
                     const textContent = await page.getTextContent();
+                    
+                    // Gabungkan semua teks dalam halaman
                     const pageText = textContent.items.map(item => item.str).join(' ');
+                    
+                    // Buat index untuk pencarian cepat
                     const indexKey = `${pdfInfo.id}_page_${pageNum}`;
-                    textIndex.set(indexKey, { pdfId: pdfInfo.id, pdfInfo: pdfInfo, pageNumber: pageNum, text: pageText.toLowerCase(), originalText: pageText, textItems: textContent.items });
+                    textIndex.set(indexKey, {
+                        pdfId: pdfInfo.id,
+                        pdfInfo: pdfInfo,
+                        pageNumber: pageNum,
+                        text: pageText.toLowerCase(),
+                        originalText: pageText,
+                        textItems: textContent.items
+                    });
+                    
                 } catch (error) {
                     console.error(`Error indexing page ${pageNum} of ${pdfInfo.name}:`, error);
                 }
             }
         }
         
+        // Fungsi untuk menyimpan index ke localStorage
         async function saveIndexToStorage() {
             try {
                 const indexData = {};
                 let count = 0;
+                
+                // Konversi Map ke object untuk disimpan
                 for (const [key, value] of textIndex.entries()) {
-                    indexData[key] = { pdfId: value.pdfId, pageNumber: value.pageNumber, text: value.text, originalText: value.originalText };
+                    indexData[key] = {
+                        pdfId: value.pdfId,
+                        pageNumber: value.pageNumber,
+                        text: value.text,
+                        originalText: value.originalText
+                        // Tidak menyimpan textItems untuk menghemat space
+                    };
                     count++;
+                    
+                    // Batasi ukuran yang disimpan ke localStorage
                     if (count > 1000) break;
                 }
-                localStorage.setItem('vkrn_text_index', JSON.stringify({ data: indexData, timestamp: Date.now(), version: '1.0' }));
+                
+                localStorage.setItem('vkrn_text_index', JSON.stringify({
+                    data: indexData,
+                    timestamp: Date.now(),
+                    version: '1.0'
+                }));
+                
             } catch (error) {
                 console.warn('Gagal menyimpan index ke localStorage:', error);
             }
         }
         
+        // Fungsi untuk memuat index dari localStorage
         function loadIndexFromStorage() {
             try {
                 const stored = localStorage.getItem('vkrn_text_index');
                 if (stored) {
                     const parsed = JSON.parse(stored);
+                    
+                    // Cek apakah data masih fresh (kurang dari 7 hari)
                     const age = Date.now() - parsed.timestamp;
-                    if (age < 7 * 24 * 60 * 60 * 1000) {
+                    if (age < 7 * 24 * 60 * 60 * 1000) { // 7 hari
+                        // Restore index dari storage
                         for (const [key, value] of Object.entries(parsed.data)) {
                             textIndex.set(key, value);
                         }
@@ -190,23 +545,30 @@
             return false;
         }
         
+        // Fungsi untuk pencarian instan dalam index
         function instantSearch(searchTerm) {
             const results = [];
             const searchTermLower = searchTerm.toLowerCase();
+            
             for (const [key, indexEntry] of textIndex.entries()) {
                 if (indexEntry.text.includes(searchTermLower)) {
                     results.push(indexEntry);
                 }
             }
+            
             return results;
         }
         
+        // Fungsi untuk memuat data CSV
         async function loadCSVData() {
             try {
                 const response = await fetch('vkrn.csv');
                 const csvText = await response.text();
+                
+                // Parse CSV menjadi array of objects
                 const lines = csvText.split('\n');
                 const headers = lines[0].split(',').map(h => h.trim());
+                
                 for (let i = 1; i < lines.length; i++) {
                     const currentLine = lines[i].split(',');
                     if (currentLine.length === headers.length && currentLine[0].trim() !== '') {
@@ -217,15 +579,18 @@
                         csvData.push(obj);
                     }
                 }
+                console.log('Data CSV dimuat:', csvData.length, 'records');
             } catch (error) {
                 console.error('Gagal memuat file CSV:', error);
                 throw error;
             }
         }
         
+        // Fungsi untuk mengubah tampilan setelah pencarian
         function toggleSearchDisplay(showResults = false) {
             const searchContainer = document.getElementById('searchContainer');
             const searchAgainContainer = document.getElementById('searchAgainContainer');
+            
             if (showResults) {
                 searchContainer.classList.add('hidden');
                 searchAgainContainer.classList.add('show');
@@ -236,28 +601,40 @@
                 hasSearchResults = false;
             }
         }
+        // Fungsi untuk refresh tampilan pencarian (cari lagi)
+function searchAgain() {
+    // Tampilkan kembali form pencarian
+    toggleSearchDisplay(false);
 
-        function searchAgain() {
-            toggleSearchDisplay(false);
-            document.getElementById('resultsContainer').innerHTML = '';
-            document.getElementById('pdfContainer').style.display = 'none';
-            document.getElementById('searchInput').value = '';
-            document.getElementById('searchInput').focus();
+    // Bersihkan hasil pencarian
+    document.getElementById('resultsContainer').innerHTML = '';
+    document.getElementById('pdfContainer').style.display = 'none';
+
+    // Reset input pencarian
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchInput').focus();
         }
         
+        // Fungsi untuk melakukan pencarian
         function performSearch(keyword) {
             if (keyword.trim() === "") {
                 alert('Silakan masukkan kata kunci pencarian');
                 return;
             }
+            
             if (!isSystemReady) {
                 alert('Sistem masih dalam proses inisialisasi. Mohon tunggu sebentar...');
                 return;
             }
+            
+            // Bersihkan input dan sembunyikan keyboard
             document.getElementById('searchInput').value = '';
             document.getElementById('searchInput').blur();
+            
+            // Filter data berdasarkan keyword
             keyword = keyword.toLowerCase();
             const results = csvData.filter(item => {
+                // Cari di semua kolom
                 for (const key in item) {
                     if (item[key].toLowerCase().includes(keyword)) {
                         return true;
@@ -265,22 +642,32 @@
                 }
                 return false;
             });
+            
             displayResults(results);
+            
+            // Ubah tampilan setelah ada hasil pencarian
             if (results.length > 0) {
                 toggleSearchDisplay(true);
             }
         }
         
+        // Fungsi untuk menampilkan hasil pencarian
         function displayResults(results) {
             const resultsContainer = document.getElementById('resultsContainer');
+            
             if (results.length === 0) {
                 resultsContainer.innerHTML = '<div class="no-results">Tidak ditemukan data yang sesuai</div>';
                 document.getElementById('pdfContainer').style.display = 'none';
                 return;
             }
+            
+            // Tampilkan jumlah hasil
             let html = `<div class="results-count">📊 Ditemukan ${results.length} data:</div>`;
+            
             results.forEach((item, index) => {
                 html += '<div class="result-item">';
+                
+                // Tampilkan semua data
                 for (const key in item) {
                     if (key === 'IDPEL') {
                         html += `<div class="idpel"><strong>${key}:</strong> ${item[key]}</div>`;
@@ -288,36 +675,61 @@
                         html += `<p><strong>${key}:</strong> ${item[key]}</p>`;
                     }
                 }
+                
+                // Tambahkan tombol "Tampilkan Program" jika ada IDPEL
                 if (item.IDPEL && item.IDPEL.trim() !== '') {
-                    html += `<button class="show-program-btn instant" onclick="showProgram('${item.IDPEL}')">📄 Tampilkan Program (Instan)<br>IDPEL: ${item.IDPEL}</button>`;
+                    html += `<button class="show-program-btn instant" onclick="showProgram('${item.IDPEL}')">
+                        📄 Tampilkan Program (Instan)<br>IDPEL: ${item.IDPEL}
+                    </button>`;
                 }
+                
                 html += '</div>';
             });
+            
             resultsContainer.innerHTML = html;
         }
         
+        // Fungsi untuk menampilkan program PDF berdasarkan IDPEL (versi instan)
         async function showProgram(idpel) {
             const pdfContainer = document.getElementById('pdfContainer');
             const pdfViewer = document.getElementById('pdfViewer');
+            
             if (!isSystemReady) {
                 alert('Sistem masih dalam proses inisialisasi. Mohon tunggu sebentar...');
                 return;
             }
+            
+            // Set IDPEL yang dicari
             searchIdpel = idpel;
+            
+            // Tampilkan container PDF
             pdfContainer.style.display = 'block';
             pdfContainer.scrollIntoView({ behavior: 'smooth' });
+            
+            // Pencarian instan dalam index
             const searchResults = instantSearch(idpel);
+            
             if (searchResults.length === 0) {
-                pdfViewer.innerHTML = `<div class="error-message">🔍 IDPEL "${idpel}" tidak ditemukan dalam database PDF</div>`;
+                pdfViewer.innerHTML = `
+                    <div class="error-message">
+                        🔍 IDPEL "${idpel}" tidak ditemukan dalam database PDF
+                    </div>
+                `;
                 return;
             }
+            
+            // Render halaman yang ditemukan
             pdfViewer.innerHTML = '<div style="text-align: center; padding: 20px; color: #7f8c8d;">⚡ Memuat hasil pencarian instan...</div>';
+            
             await renderFoundPages(searchResults);
         }
         
+        // Fungsi untuk render halaman yang ditemukan
         async function renderFoundPages(searchResults) {
             const pdfViewer = document.getElementById('pdfViewer');
             pdfViewer.innerHTML = '';
+            
+            // Group results by PDF
             const groupedResults = new Map();
             for (const result of searchResults) {
                 if (!groupedResults.has(result.pdfId)) {
@@ -325,21 +737,36 @@
                 }
                 groupedResults.get(result.pdfId).push(result);
             }
+            
+            // Render setiap grup
             for (const [pdfId, pages] of groupedResults.entries()) {
                 const pdfData = pdfDatabase.get(pdfId);
                 if (!pdfData) continue;
+                
                 for (const pageResult of pages) {
                     try {
                         const page = await pdfData.pdf.getPage(pageResult.pageNumber);
-                        const containerWidth = pdfViewer.clientWidth - 40;
+                        
+                        // Hitung scale untuk fit width
+                        const container = pdfViewer;
+                        const containerWidth = container.clientWidth - 40;
                         const baseViewport = page.getViewport({ scale: 1 });
                         const scale = containerWidth / baseViewport.width;
+                        
+                        // Render halaman
                         const canvas = await renderPageToCanvas(page, scale);
+                        
+                        // Buat container untuk halaman
                         const pageDiv = document.createElement('div');
                         pageDiv.className = 'pdf-page';
                         pageDiv.appendChild(canvas);
+                        
+                        // Highlight IDPEL
                         await highlightTextInPage(page, pageDiv, page.getViewport({ scale: scale }), searchIdpel);
+                        
+                        // Tampilkan halaman
                         pdfViewer.appendChild(pageDiv);
+                        
                     } catch (error) {
                         console.error(`Error rendering page ${pageResult.pageNumber}:`, error);
                     }
@@ -347,42 +774,63 @@
             }
         }
         
+        // Fungsi untuk render halaman ke canvas
         async function renderPageToCanvas(page, scale) {
             const scaledViewport = page.getViewport({ scale: scale });
+            
+            // Buat canvas dengan resolusi tinggi
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
+            
+            // Set ukuran canvas dengan device pixel ratio untuk kualitas retina
             const outputScale = devicePixelRatio;
             canvas.width = Math.floor(scaledViewport.width * outputScale);
             canvas.height = Math.floor(scaledViewport.height * outputScale);
             canvas.style.width = Math.floor(scaledViewport.width) + "px";
             canvas.style.height = Math.floor(scaledViewport.height) + "px";
+            
+            // Scale context untuk rendering berkualitas tinggi
             const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+            
+            // Set rendering context dengan kualitas tinggi
             context.imageSmoothingEnabled = true;
             context.imageSmoothingQuality = 'high';
+            
             canvas.className = 'pdf-canvas';
+            
+            // Render halaman dengan kualitas tinggi
             const renderContext = {
                 canvasContext: context,
                 viewport: scaledViewport,
                 transform: transform
             };
+            
             await page.render(renderContext).promise;
+            
             return canvas;
         }
         
+        // Fungsi untuk highlight teks dalam halaman
         async function highlightTextInPage(page, pageDiv, viewport, searchText) {
             try {
                 const textContent = await page.getTextContent();
+                
                 textContent.items.forEach(item => {
                     if (item.str.toLowerCase().includes(searchText.toLowerCase())) {
+                        // Buat highlight overlay
                         const highlight = document.createElement('div');
                         highlight.className = 'highlight-overlay';
+                        
+                        // Hitung posisi berdasarkan transform matrix
                         const transform = pdfjsLib.Util.transform(viewport.transform, item.transform);
                         const left = transform[4];
                         const top = viewport.height - transform[5] - item.height;
+                        
                         highlight.style.left = left + 'px';
                         highlight.style.top = top + 'px';
                         highlight.style.width = item.width + 'px';
                         highlight.style.height = item.height + 'px';
+                        
                         pageDiv.appendChild(highlight);
                     }
                 });
@@ -391,24 +839,27 @@
             }
         }
         
+        // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
-            // Tidak ada initializeSystem otomatis
+            // Mulai inisialisasi sistem
+            initializeSystem();
+            
             document.getElementById('searchButton').addEventListener('click', () => {
                 const keyword = document.getElementById('searchInput').value;
                 performSearch(keyword);
             });
+            
             document.getElementById('searchInput').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     const keyword = document.getElementById('searchInput').value;
                     performSearch(keyword);
                 }
             });
+            
+            // Event listener untuk tombol cari lagi
             document.getElementById('searchAgainBtn').addEventListener('click', searchAgain);
-            document.getElementById('refreshIndexBtn').addEventListener('click', () => {
-                // Tampilkan overlay dan mulai indexing!
-                initializeSystem();
-            });
         });
     </script>
 </body>
-    </html>
+</html>
+
