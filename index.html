@@ -3,55 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Situs Pencarian Data</title>
-    <!-- Tailwind CSS CDN untuk styling -->
+    <title>Pencarian Data CSV</title>
+    <!-- Memuat Tailwind CSS untuk styling modern dan responsif -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Gaya khusus untuk memastikan elemen mengisi tinggi viewport dan mengaktifkan scroll */
         body {
+            min-height: 100vh;
+            background-color: #1a202c; /* Latar belakang gelap */
+            color: #e2e8f0; /* Teks terang */
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
         }
-        .container {
-            max-width: 800px;
+
+        /* Gaya untuk area hasil pencarian */
+        #results {
+            max-height: 60vh; /* Batasi tinggi untuk membuat area dapat di-scroll */
+            overflow-y: auto; /* Aktifkan scroll vertikal */
+            scrollbar-width: thin; /* Untuk Firefox */
         }
-        .search-results-table {
-            width: 100%;
-            border-collapse: collapse;
+
+        /* Gaya scrollbar khusus untuk WebKit (Chrome, Safari) */
+        #results::-webkit-scrollbar {
+            width: 8px;
         }
-        .search-results-table th, .search-results-table td {
-            padding: 12px 16px;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
+        #results::-webkit-scrollbar-track {
+            background: #2d3748;
+            border-radius: 10px;
         }
-        .search-results-table th {
-            background-color: #1f2937;
-            color: white;
-            font-weight: 600;
+        #results::-webkit-scrollbar-thumb {
+            background-color: #4a5568;
+            border-radius: 10px;
+            border: 2px solid #2d3748;
         }
-        .search-results-table tr:nth-child(even) {
-            background-color: #f9fafb;
+
+        .result-item {
+            border-bottom: 1px solid #4a5568;
         }
-        .search-results-table tr:hover {
-            background-color: #e5e7eb;
+        .result-item:last-child {
+            border-bottom: none;
         }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-900 text-gray-100">
 
-    <div class="container bg-white p-8 rounded-xl shadow-lg w-full">
-        <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">Pencarian Data</h1>
-        
-        <!-- Input Pencarian dan Tombol -->
-        <div class="flex items-center space-x-4 mb-8">
-            <input type="text" id="searchInput" placeholder="Cari berdasarkan nama, produk, atau kota..." class="flex-grow p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition-colors duration-200">
-            <button id="searchButton" class="bg-blue-600 text-white font-semibold p-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md">
+    <div class="w-full max-w-2xl bg-gray-800 p-8 rounded-xl shadow-lg">
+        <h1 class="text-3xl font-bold text-center mb-6 text-indigo-400">Pencarian Data</h1>
+        <p class="text-center text-gray-400 mb-6">Masukkan kata kunci untuk mencari data dari file CSV.</p>
+
+        <!-- Container untuk input dan tombol -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-6">
+            <input
+                id="searchInput"
+                type="text"
+                placeholder="Cari..."
+                class="flex-1 bg-gray-700 text-gray-100 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+            />
+            <button
+                id="searchButton"
+                class="bg-indigo-600 text-white rounded-lg py-3 px-6 font-semibold shadow-md hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-300 transform hover:scale-105"
+            >
                 Cari
             </button>
         </div>
 
-        <!-- Area untuk menampilkan hasil -->
-        <div id="resultsContainer">
-            <p class="text-center text-gray-500">Memuat data...</p>
+        <!-- Area untuk menampilkan hasil pencarian -->
+        <div id="results" class="bg-gray-700 rounded-lg p-4 shadow-inner">
+            <p class="text-center text-gray-400">Hasil pencarian akan muncul di sini.</p>
         </div>
     </div>
 
@@ -59,103 +80,86 @@
         document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('searchInput');
             const searchButton = document.getElementById('searchButton');
-            const resultsContainer = document.getElementById('resultsContainer');
+            const resultsDiv = document.getElementById('results');
 
-            // Fungsi untuk mengurai konten CSV menjadi array of objects
+            // Data contoh dari file CSV. Anda bisa mengganti ini dengan konten vkrn.csv Anda.
+            // Pastikan tidak ada spasi di awal atau akhir baris.
+            const csvDataString = `id,nama,deskripsi
+1,Produk A,Ini adalah deskripsi untuk produk A.
+2,Layanan B,Layanan ini sangat baik untuk bisnis kecil.
+3,Proyek C,Proyek C adalah sebuah inisiatif baru.
+4,Produk X,Ini adalah versi beta dari produk baru kami.
+5,Laporan Tahunan,Laporan ini berisi data dari semua produk kami.
+6,Layanan B2,Layanan ini adalah versi terbaru dari Layanan B.
+7,Proyek Z,Proyek Z bertujuan untuk mengotomatiskan proses lama.
+8,Produk A2,Ini adalah pembaruan minor untuk Produk A.
+9,Layanan Eksklusif,Layanan premium ini hanya tersedia untuk anggota.`;
+
+            // Fungsi untuk memproses data CSV
             function parseCsv(csvString) {
+                // Memisahkan baris berdasarkan karakter baris baru
                 const lines = csvString.trim().split('\n');
-                if (lines.length <= 1) return []; // Handle empty file
-                const headers = lines[0].split(',').map(h => h.trim());
-                const data = lines.slice(1).map(line => {
-                    const values = line.split(',');
-                    const rowObject = {};
-                    headers.forEach((header, i) => {
-                        rowObject[header] = values[i].trim();
-                    });
-                    return rowObject;
+                // Baris pertama adalah header, kita abaikan atau gunakan jika diperlukan
+                const headers = lines[0].split(',');
+                // Memproses baris-baris data
+                return lines.slice(1).map(line => {
+                    return line.split(',');
                 });
-                return data;
             }
 
-            // Fungsi untuk menampilkan hasil pencarian
+            const data = parseCsv(csvDataString);
+
+            // Fungsi untuk menampilkan hasil
             function displayResults(results) {
+                resultsDiv.innerHTML = ''; // Hapus hasil sebelumnya
+
                 if (results.length === 0) {
-                    resultsContainer.innerHTML = `<p class="text-center text-gray-500">Tidak ada data yang cocok dengan kata kunci Anda.</p>`;
+                    resultsDiv.innerHTML = '<p class="text-center text-gray-400">Tidak ada hasil yang ditemukan.</p>';
                     return;
                 }
 
-                // Membuat tabel untuk menampilkan hasil
-                let html = `
-                    <div class="overflow-x-auto rounded-lg shadow-md">
-                        <table class="search-results-table">
-                            <thead>
-                                <tr>
-                                    <th>Nama</th>
-                                    <th>Toko</th>
-                                    <th>Produk</th>
-                                    <th>Kota</th>
-                                    <th>Harga</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-
-                results.forEach(item => {
-                    html += `
-                        <tr>
-                            <td>${item.Nama}</td>
-                            <td>${item.Toko}</td>
-                            <td>${item.Produk}</td>
-                            <td>${item.Kota}</td>
-                            <td>${item.Harga}</td>
-                        </tr>
-                    `;
-                });
-
-                html += `
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-
-                resultsContainer.innerHTML = html;
-            }
-
-            // Fungsi utama untuk mengambil dan memproses data
-            async function fetchData() {
-                try {
-                    const response = await fetch('vkrn.csv');
-                    if (!response.ok) {
-                        throw new Error(`Kesalahan HTTP: ${response.status}`);
-                    }
-                    const csvText = await response.text();
-                    const allData = parseCsv(csvText);
-
-                    // Menangani klik tombol pencarian setelah data dimuat
-                    searchButton.addEventListener('click', () => {
-                        const query = searchInput.value.toLowerCase().trim();
-                        const filteredResults = allData.filter(item => {
-                            return (
-                                item.Nama.toLowerCase().includes(query) ||
-                                item.Toko.toLowerCase().includes(query) ||
-                                item.Produk.toLowerCase().includes(query) ||
-                                item.Kota.toLowerCase().includes(query)
-                            );
-                        });
-                        displayResults(filteredResults);
-                    });
+                results.forEach(row => {
+                    const resultItem = document.createElement('div');
+                    resultItem.classList.add('result-item', 'p-4', 'hover:bg-gray-600', 'transition-colors', 'rounded-md', 'cursor-pointer');
                     
-                    // Tampilkan semua data saat pertama kali dimuat
-                    displayResults(allData);
-
-                } catch (error) {
-                    resultsContainer.innerHTML = `<p class="text-center text-red-500">Terjadi kesalahan saat memuat data: ${error.message}. Pastikan Anda menjalankan website melalui server web.</p>`;
-                    console.error('Ada masalah dengan operasi fetch:', error);
-                }
+                    // Membuat konten untuk setiap baris data
+                    const content = `
+                        <h2 class="text-lg font-bold text-blue-300">${row[1]}</h2>
+                        <p class="text-sm text-gray-400">ID: ${row[0]}</p>
+                        <p class="mt-2">${row[2]}</p>
+                    `;
+                    resultItem.innerHTML = content;
+                    resultsDiv.appendChild(resultItem);
+                });
             }
 
-            fetchData();
+            // Fungsi untuk melakukan pencarian
+            function performSearch() {
+                const searchTerm = searchInput.value.toLowerCase();
+                if (searchTerm.length === 0) {
+                    displayResults([]);
+                    resultsDiv.innerHTML = '<p class="text-center text-gray-400">Hasil pencarian akan muncul di sini.</p>';
+                    return;
+                }
+
+                const filteredResults = data.filter(row => {
+                    // Mencari kecocokan di setiap kolom (id, nama, deskripsi)
+                    return row.some(cell => cell.toLowerCase().includes(searchTerm));
+                });
+                
+                displayResults(filteredResults);
+            }
+
+            // Menambahkan event listener ke tombol
+            searchButton.addEventListener('click', performSearch);
+            // Menambahkan event listener untuk tombol 'Enter' pada input
+            searchInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    performSearch();
+                }
+            });
         });
     </script>
+
 </body>
 </html>
