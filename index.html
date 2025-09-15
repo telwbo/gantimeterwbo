@@ -51,25 +51,12 @@
 
         <!-- Area untuk menampilkan hasil -->
         <div id="resultsContainer">
-            <p class="text-center text-gray-500">Silakan masukkan kata kunci pencarian dan klik "Cari".</p>
+            <p class="text-center text-gray-500">Memuat data...</p>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Simulasi data dari file vkrn.csv
-            const vkrnCsvContent = `Nama,Toko,Produk,Kota,Harga
-Budi Santoso,Toko Bahagia,Laptop Acer,Jakarta,8500000
-Siti Aminah,Elektronik Jaya,Monitor Samsung,Bandung,2300000
-Agus Widodo,Gudang Gadget,Keyboard Logitech,Surabaya,750000
-Dewi Lestari,Toko Digital,Mouse Wireless,Jakarta,250000
-Joko Susilo,Tekno Shop,Webcam,Semarang,400000
-Rina Putri,Pusat Komputer,Speaker Bluetooth,Bandung,600000
-Hendra Kusuma,Toko Bahagia,Headset Gaming,Jakarta,900000
-Lina Wati,Gudang Gadget,Printer Epson,Surabaya,1200000
-Fajar Nugraha,Elektronik Jaya,Harddisk Eksternal,Semarang,800000
-Eka Sari,Tekno Shop,Flashdisk 64GB,Yogyakarta,150000`;
-
             const searchInput = document.getElementById('searchInput');
             const searchButton = document.getElementById('searchButton');
             const resultsContainer = document.getElementById('resultsContainer');
@@ -77,20 +64,18 @@ Eka Sari,Tekno Shop,Flashdisk 64GB,Yogyakarta,150000`;
             // Fungsi untuk mengurai konten CSV menjadi array of objects
             function parseCsv(csvString) {
                 const lines = csvString.trim().split('\n');
-                const headers = lines[0].split(',');
+                if (lines.length <= 1) return []; // Handle empty file
+                const headers = lines[0].split(',').map(h => h.trim());
                 const data = lines.slice(1).map(line => {
                     const values = line.split(',');
                     const rowObject = {};
                     headers.forEach((header, i) => {
-                        rowObject[header.trim()] = values[i].trim();
+                        rowObject[header] = values[i].trim();
                     });
                     return rowObject;
                 });
                 return data;
             }
-
-            // Menguraikan data CSV
-            const allData = parseCsv(vkrnCsvContent);
 
             // Fungsi untuk menampilkan hasil pencarian
             function displayResults(results) {
@@ -136,25 +121,41 @@ Eka Sari,Tekno Shop,Flashdisk 64GB,Yogyakarta,150000`;
                 resultsContainer.innerHTML = html;
             }
 
-            // Fungsi untuk menangani klik tombol pencarian
-            searchButton.addEventListener('click', () => {
-                const query = searchInput.value.toLowerCase().trim();
-                const filteredResults = allData.filter(item => {
-                    // Cek di setiap kolom yang relevan
-                    return (
-                        item.Nama.toLowerCase().includes(query) ||
-                        item.Toko.toLowerCase().includes(query) ||
-                        item.Produk.toLowerCase().includes(query) ||
-                        item.Kota.toLowerCase().includes(query)
-                    );
-                });
-                displayResults(filteredResults);
-            });
+            // Fungsi utama untuk mengambil dan memproses data
+            async function fetchData() {
+                try {
+                    const response = await fetch('vkrn.csv');
+                    if (!response.ok) {
+                        throw new Error(`Kesalahan HTTP: ${response.status}`);
+                    }
+                    const csvText = await response.text();
+                    const allData = parseCsv(csvText);
 
-            // Tampilkan semua data saat halaman dimuat
-            displayResults(allData);
+                    // Menangani klik tombol pencarian setelah data dimuat
+                    searchButton.addEventListener('click', () => {
+                        const query = searchInput.value.toLowerCase().trim();
+                        const filteredResults = allData.filter(item => {
+                            return (
+                                item.Nama.toLowerCase().includes(query) ||
+                                item.Toko.toLowerCase().includes(query) ||
+                                item.Produk.toLowerCase().includes(query) ||
+                                item.Kota.toLowerCase().includes(query)
+                            );
+                        });
+                        displayResults(filteredResults);
+                    });
+                    
+                    // Tampilkan semua data saat pertama kali dimuat
+                    displayResults(allData);
+
+                } catch (error) {
+                    resultsContainer.innerHTML = `<p class="text-center text-red-500">Terjadi kesalahan saat memuat data: ${error.message}. Pastikan Anda menjalankan website melalui server web.</p>`;
+                    console.error('Ada masalah dengan operasi fetch:', error);
+                }
+            }
+
+            fetchData();
         });
     </script>
-
 </body>
 </html>
