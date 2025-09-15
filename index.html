@@ -29,12 +29,12 @@
     <div class="container mx-auto bg-white p-8 rounded-xl shadow-lg">
         <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Pencarian Dokumen</h1>
         <p class="text-center text-gray-500 mb-8">
-            Masukkan ID data untuk mencari file PDF yang sesuai. Data sudah diinisialisasi saat website dimuat.
+            Data dimuat langsung di dalam kode untuk pencarian yang lebih cepat.
         </p>
 
         <!-- Search form -->
         <div class="flex flex-col sm:flex-row gap-4 mb-8">
-            <input type="text" id="searchInput" placeholder="Masukkan ID data, contoh: laporan_2023_01" class="flex-grow p-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-blue-500 transition-colors">
+            <input type="text" id="searchInput" placeholder="Masukkan ID data" class="flex-grow p-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-blue-500 transition-colors">
             <button id="searchButton" class="bg-blue-500 text-white font-semibold p-3 rounded-lg shadow-md hover:bg-blue-600 transition-colors">Cari</button>
         </div>
 
@@ -65,12 +65,12 @@
             const messageArea = document.getElementById('messageArea');
             const pdfContainer = document.getElementById('pdfContainer');
             const pdfViewer = document.getElementById('pdfViewer');
-
-            // Store data from CSV in a Map for fast lookup
+            
             const dataMap = new Map();
-
-            // --- Function to pre-load and process CSV data on page load ---
+            
+            // Function to pre-load and process CSV data on page load
             function initializeData() {
+                // Data CSV sekarang disimpan langsung di dalam string.
                 const csvData = `id_data,nama_file_pdf
 laporan_2023_01,laporan_penjualan_januari.pdf
 laporan_2023_02,laporan_penjualan_februari.pdf
@@ -81,13 +81,17 @@ dokumen_internal_101,dokumen_rencana_bisnis.pdf
                 
                 const rows = csvData.split('\n').filter(row => row.trim() !== '');
                 
-                // Iterate through each row and store it in the map
                 for (let i = 1; i < rows.length; i++) {
                     const columns = rows[i].split(',');
-                    const dataId = columns[0].trim().toLowerCase();
-                    const pdfFilename = columns[1].trim();
-                    dataMap.set(dataId, { id: dataId, pdf: pdfFilename });
+                    if (columns.length >= 2) {
+                        const dataId = columns[0].trim().toLowerCase();
+                        const pdfFilename = columns[1].trim();
+                        dataMap.set(dataId, { id: dataId, pdf: pdfFilename });
+                    }
                 }
+                messageArea.textContent = 'Data berhasil dimuat. Siap untuk pencarian.';
+                messageArea.classList.remove('text-red-500');
+                messageArea.classList.add('text-green-500');
             }
             
             // Call the initialization function when the page first loads
@@ -102,7 +106,6 @@ dokumen_internal_101,dokumen_rencana_bisnis.pdf
                 pdfContainer.classList.add('hidden');
                 messageArea.textContent = '';
                 
-                // Look for data in the pre-loaded map
                 const foundData = dataMap.get(searchTerm);
 
                 if (foundData) {
@@ -121,7 +124,8 @@ dokumen_internal_101,dokumen_rencana_bisnis.pdf
             viewPdfButton.addEventListener('click', () => {
                 const filenameToView = viewPdfButton.dataset.pdfFile;
                 if (filenameToView) {
-                    pdfViewer.src = filenameToView;
+                    // Prepend the 'pdf/' folder path
+                    pdfViewer.src = `pdf/${filenameToView}`;
                     pdfContainer.classList.remove('hidden');
                     messageArea.textContent = '';
                 }
