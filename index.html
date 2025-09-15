@@ -601,10 +601,18 @@
                 hasSearchResults = false;
             }
         }
-        
-        // Fungsi untuk refresh halaman (cari lagi)
-        function searchAgain() {
-            location.reload();
+        // Fungsi untuk refresh tampilan pencarian (cari lagi)
+function searchAgain() {
+    // Tampilkan kembali form pencarian
+    toggleSearchDisplay(false);
+
+    // Bersihkan hasil pencarian
+    document.getElementById('resultsContainer').innerHTML = '';
+    document.getElementById('pdfContainer').style.display = 'none';
+
+    // Reset input pencarian
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchInput').focus();
         }
         
         // Fungsi untuk melakukan pencarian
