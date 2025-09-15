@@ -1,12 +1,3 @@
-Berikut adalah **kode lengkap file `index.html`** yang sudah dioptimalkan agar proses indexing data PDF hanya terjadi satu kali (menggunakan localStorage). Jika user sudah pernah membuka website, index akan diambil dari cache sehingga proses sangat cepat saat kunjungan berikutnya.
-
-**Fitur:**  
-- Index PDF tersimpan di localStorage, hanya di-index ulang jika cache belum ada atau sudah lebih dari 7 hari.
-- Tidak ada perubahan pada UI/UX website, hanya optimalisasi proses indexing.
-
----
-
-```html
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -523,13 +514,3 @@ Berikut adalah **kode lengkap file `index.html`** yang sudah dioptimalkan agar p
 </body>
 </html>
 ```
-
----
-
-**Penjelasan singkat:**
-- Proses indexing PDF hanya berjalan sekali, hasilnya disimpan di localStorage.
-- Jika cache masih valid (kurang dari 7 hari), sistem langsung siap tanpa indexing ulang.
-- Kode ini bisa langsung dipakai untuk menggantikan file `index.html` lama.
-
-Jika ada file PDF atau CSV yang berubah, index akan diulang otomatis jika cache habis masa berlaku (7 hari secara default, bisa diubah pada kode).  
-**Kamu bisa langsung copy-paste kode ini ke file `index.html` di repo kamu.**
