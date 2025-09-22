@@ -1,148 +1,141 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VKRN ULP Wonosobo</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { margin: 0; padding: 20px; background-color: #f5f5f5; }
-        .container { max-width: 100%; width: 100%; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }
-        h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; }
-        .search-container { display: flex; margin-bottom: 20px; max-width: 800px; margin-left: auto; margin-right: auto; }
-        #searchInput { flex: 1; padding: 12px 15px; border: 1px solid #ddd; border-radius: 5px 0 0 5px; font-size: 16px; outline: none; }
-        #searchButton { padding: 12px 20px; background-color: #3498db; color: white; border: none; border-radius: 0 5px 5px 0; cursor: pointer; font-size: 16px; transition: background-color 0.2s; }
-        #searchButton:hover { background-color: #2980b9; }
-        #resultsContainer { margin-top: 20px; margin-bottom: 30px; }
-        .result-item { padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 15px; background-color: #fafafa; display: block; }
-        .result-item p { margin: 5px 0; word-wrap: break-word; font-size: 14px; }
-        .result-item strong { color: #2c3e50; }
-        .result-item .idpel { background-color: #e8f6ff; padding: 8px; border-radius: 4px; border-left: 3px solid #3498db; margin: 10px 0; font-weight: bold; }
-        .no-results { text-align: center; color: #7f8c8d; padding: 20px; }
-        .results-count { margin-bottom: 15px; color: #7f8c8d; font-size: 14px; font-weight: bold; }
-        .show-program-btn { background-color: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-top: 10px; width: 100%; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VKRN ULP Wonosobo</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; margin:0; padding:20px; }
+    .container { max-width: 1000px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);}
+    h1 { text-align: center; margin-bottom: 20px; color: #2c3e50;}
+    .search-container { display:flex; margin-bottom:20px; }
+    #searchInput { flex:1; padding:10px; border:1px solid #ccc; border-radius:4px 0 0 4px;}
+    #searchButton { padding:10px 20px; border:none; background:#3498db; color:white; border-radius:0 4px 4px 0; cursor:pointer;}
+    #searchButton:hover { background:#2980b9;}
+    .results-count { margin-bottom:15px; font-weight:bold; color:#7f8c8d;}
+    .result-item { padding:15px; border:1px solid #eee; border-radius:6px; margin-bottom:15px; background:#fafafa;}
+    .result-item p { margin:5px 0; font-size:14px; word-break:break-word;}
+    .result-item strong { color:#2c3e50;}
+    .idpel { background:#e8f6ff; padding:8px; border-left:3px solid #3498db; margin:8px 0; font-weight:bold;}
+    .no-results { text-align:center; padding:20px; color:#888;}
+    footer { text-align:center; color:#888; padding:20px 0 0 0; font-size:14px;}
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>VKRN ULP Wonosobo</h1>
-
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="Masukkan IDPEL / Nomor Meter / Nama...">
-            <button id="searchButton">Cari</button>
-        </div>
-
-        <div id="resultsContainer"></div>
+  <div class="container">
+    <h1>VKRN ULP Wonosobo</h1>
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Masukkan IDPEL / Nomor Meter / Nama...">
+      <button id="searchButton">Cari</button>
     </div>
+    <div id="resultsContainer"></div>
+  </div>
 
-    <script>
-        let csvData = [];
+  <footer>
+    @TELWBO<br>AHLINE PAK DAYAT
+  </footer>
 
-        function parseCSV(text) {
-            const firstLine = text.split(/\r?\n/)[0] || '';
-            const delim = (firstLine.split('\t').length > firstLine.split(',').length) ? '\t' : ',';
-            const rows = [];
-            let row = [], field = '', inQuotes = false, i = 0;
+<script>
+let csvData = [];
 
-            while (i < text.length) {
-                const c = text[i];
-                if (inQuotes) {
-                    if (c === '"') {
-                        if (i + 1 < text.length && text[i + 1] === '"') { field += '"'; i += 2; }
-                        else { inQuotes = false; i++; }
-                    } else { field += c; i++; }
-                } else {
-                    if (c === '"') { inQuotes = true; i++; }
-                    else if (c === delim) { row.push(field.trim()); field = ''; i++; }
-                    else if (c === '\n') { row.push(field.trim()); field = ''; if (row.some(v => v !== '')) rows.push(row); row = []; i++; }
-                    else if (c === '\r') { i++; }
-                    else { field += c; i++; }
-                }
-            }
-            if (field.length || row.length) { row.push(field.trim()); if (row.some(v => v !== '')) rows.push(row); }
-            return { rows, delim };
-        }
+function parseCSV(text) {
+  const firstLine = text.split(/\r?\n/)[0] || '';
+  const delim = (firstLine.split('\t').length > firstLine.split(',').length) ? '\t' : ',';
+  const rows = [];
+  let row=[], field='', inQuotes=false, i=0;
+  while (i<text.length) {
+    const c=text[i];
+    if(inQuotes){
+      if(c==='"'){ if(i+1<text.length && text[i+1]==='"'){ field+='"'; i+=2;} else{ inQuotes=false; i++;}}
+      else{ field+=c; i++; }
+    }else{
+      if(c==='"'){ inQuotes=true; i++; }
+      else if(c===delim){ row.push(field.trim()); field=''; i++; }
+      else if(c==='\n'){ row.push(field.trim()); field=''; if(row.some(v=>v!=='')) rows.push(row); row=[]; i++; }
+      else if(c==='\r'){ i++; }
+      else{ field+=c; i++; }
+    }
+  }
+  if(field.length||row.length){ row.push(field.trim()); if(row.some(v=>v!=='')) rows.push(row);}
+  return {rows, delim};
+}
 
-        async function loadCSV(file) {
-            const response = await fetch(file);
-            const text = await response.text();
-            const { rows } = parseCSV(text);
-            if (!rows.length) return [];
-            const headers = rows[0].map(h => h.trim());
-            const objects = [];
-            for (let r = 1; r < rows.length; r++) {
-                const line = rows[r];
-                if (!line || !line.length) continue;
-                const obj = {};
-                for (let j = 0; j < headers.length; j++) {
-                    obj[headers[j]] = (line[j] ?? '').toString().trim();
-                }
-                if (!Object.values(obj).every(v => v === '')) objects.push(obj);
-            }
-            return objects;
-        }
+async function loadCSV(file){
+  try{
+    const response = await fetch(file);
+    if(!response.ok) return [];
+    const text = await response.text();
+    const {rows}=parseCSV(text);
+    if(!rows.length) return [];
+    // normalize header
+    const headers = rows[0].map(h=>h.trim().toUpperCase());
+    const objects=[];
+    for(let r=1;r<rows.length;r++){
+      const line=rows[r]; if(!line||!line.length) continue;
+      const obj={};
+      for(let j=0;j<headers.length;j++){
+        const key=headers[j]||`COL_${j+1}`;
+        obj[key]=(line[j]??'').toString().trim();
+      }
+      if(!Object.values(obj).every(v=>v==='')) objects.push(obj);
+    }
+    return objects;
+  }catch(e){ console.error("Load CSV error",file,e); return []; }
+}
 
-        async function loadAllCSV() {
-            const krn = await loadCSV('vkrn.csv');
-            const sanxing = await loadCSV('vkrn_sanxing.csv.csv');
-            csvData = [...krn, ...sanxing];
-            console.log('Total data gabungan:', csvData.length);
-        }
+async function loadAllCSV(){
+  const krn = await loadCSV('vkrn.csv');
+  const sanxing = await loadCSV('vkrn_sanxing.csv');
+  csvData=[...krn,...sanxing];
+  console.log("Total data gabungan:",csvData.length);
+}
 
-        function performSearch(keyword) {
-            const resultsContainer = document.getElementById('resultsContainer');
-            if (!keyword.trim()) { alert('Masukkan kata kunci'); return; }
-            const q = keyword.toLowerCase();
-            const results = csvData.filter(item =>
-                Object.keys(item).some(k => (item[k] || '').toLowerCase().includes(q))
-            );
+function performSearch(keyword){
+  const resultsContainer=document.getElementById('resultsContainer');
+  if(!keyword.trim()){ alert("Masukkan kata kunci"); return;}
+  const q=keyword.toLowerCase();
+  const results=csvData.filter(item=>Object.keys(item).some(k=>(item[k]||'').toLowerCase().includes(q)));
+  if(!results.length){
+    resultsContainer.innerHTML='<div class="no-results">Tidak ditemukan data</div>'; return;
+  }
+  let html=`<div class="results-count">📊 Ditemukan ${results.length} data:</div>`;
+  results.forEach(item=>{
+    const idpel=item['IDPEL']||'';
+    html+=`<div class="result-item">`;
+    // tampilkan max 25 field
+    let counter=0;
+    for(const key in item){
+      if(counter>=25) break;
+      const val=item[key]??'';
+      if(val==='') continue;
+      if(key==='IDPEL'){
+        html+=`<div class="idpel"><strong>${key}:</strong> ${val}</div>`;
+      }else if(/^https?:\/\//i.test(val)){
+        html+=`<p><strong>${key}:</strong> <a href="${val}" target="_blank">Link</a></p>`;
+      }else{
+        html+=`<p><strong>${key}:</strong> ${val}</p>`;
+      }
+      counter++;
+    }
+    // link peta jika ada koordinat
+    const kx=item['KOORDINAT_X'], ky=item['KOORDINAT_Y'];
+    if(kx && ky && !isNaN(Number(kx)) && !isNaN(Number(ky))){
+      html+=`<p><strong>PETA:</strong> <a href="https://www.google.com/maps?q=${kx},${ky}" target="_blank">Lihat Peta</a></p>`;
+    }
+    html+=`</div>`;
+  });
+  resultsContainer.innerHTML=html;
+}
 
-            if (!results.length) {
-                resultsContainer.innerHTML = '<div class="no-results">Tidak ditemukan data</div>';
-                return;
-            }
-
-            let html = `<div class="results-count">📊 Ditemukan ${results.length} data:</div>`;
-            results.forEach(item => {
-                const idpel = item['IDPEL'] || '';
-                html += `<div class="result-item">`;
-                for (const key in item) {
-                    const val = item[key] ?? '';
-                    if (key.toLowerCase().includes('koordinat_x') || key.toLowerCase().includes('koordinat_y')) continue;
-                    if (/^https?:\/\//i.test(val)) {
-                        html += `<p><strong>${key}:</strong> <a href="${val}" target="_blank">Link</a></p>`;
-                    } else {
-                        html += `<p><strong>${key}:</strong> ${val}</p>`;
-                    }
-                }
-                // buat link peta kalau ada koordinat
-                const kx = item['KOORDINAT_X'] || item['Koordinat_X'];
-                const ky = item['KOORDINAT_Y'] || item['Koordinat_Y'];
-                if (kx && ky) {
-                    html += `<p><strong>PETA:</strong> <a href="https://www.google.com/maps?q=${kx},${ky}" target="_blank">Lihat Peta</a></p>`;
-                }
-                html += `</div>`;
-            });
-            resultsContainer.innerHTML = html;
-        }
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadAllCSV();
-            document.getElementById('searchButton').addEventListener('click', () => {
-                const keyword = document.getElementById('searchInput').value;
-                performSearch(keyword);
-            });
-            document.getElementById('searchInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    performSearch(e.target.value);
-                }
-            });
-        });
-    </script>
-
-    <footer style="text-align:center; color:#888; padding:20px 0 0 0; font-size:14px;">
-      @TELWBO<br> AHLINE PAK DAYAT
-    </footer>
+document.addEventListener('DOMContentLoaded',async()=>{
+  await loadAllCSV();
+  document.getElementById('searchButton').addEventListener('click',()=>{
+    performSearch(document.getElementById('searchInput').value);
+  });
+  document.getElementById('searchInput').addEventListener('keypress',(e)=>{
+    if(e.key==='Enter'){ performSearch(e.target.value); }
+  });
+});
+</script>
 </body>
 </html>
