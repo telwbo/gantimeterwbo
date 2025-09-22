@@ -5,29 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VKRN ULP Wonosobo</title>
   <style>
-    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
-    body { margin: 0; padding: 20px; background: #f5f6fa; }
-    h1 { text-align: center; margin-bottom: 20px; color: #2c3e50; }
-    .container { max-width: 1000px; margin: auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    #searchInput { width: 80%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px 0 0 4px; }
-    #searchButton { padding: 10px 20px; border: none; background: #3498db; color: #fff; font-size: 16px; border-radius: 0 4px 4px 0; cursor: pointer; }
-    #searchButton:hover { background: #2980b9; }
-    .search-box { text-align: center; margin-bottom: 20px; }
-    .results-count { margin-bottom: 10px; font-weight: bold; color: #555; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-    th, td { padding: 8px 10px; border: 1px solid #ddd; text-align: left; }
-    th { background: #3498db; color: white; }
-    tr:nth-child(even) { background: #f9f9f9; }
-    .no-results { text-align: center; color: #888; margin-top: 20px; }
-    footer { text-align: center; color: #888; margin-top: 30px; font-size: 14px; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f8f9fa; }
+    .container { max-width: 900px; margin: auto; padding: 30px; }
+    h1 { text-align: center; margin-bottom: 20px; }
+    .info { text-align: center; margin-bottom: 15px; color: #555; }
+    .search-box { display: flex; justify-content: center; margin-bottom: 20px; }
+    .search-box input { width: 70%; padding: 10px; border: 1px solid #ccc; border-radius: 5px 0 0 5px; }
+    .search-box button { padding: 10px 20px; border: none; background: #3f51b5; color: white; border-radius: 0 5px 5px 0; cursor: pointer; }
+    .search-box button:hover { background: #2c3e9f; }
+    .results-count { margin-bottom: 10px; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+    th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
+    th { background: #f1f1f1; text-align: left; }
+    .no-results { padding: 15px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 5px; color: #856404; margin-top: 15px; }
+    footer { text-align: center; margin-top: 30px; color: #888; font-size: 14px; }
+    .btn-refresh { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+    .btn-refresh:hover { background: #218838; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>VKRN ULP Wonosobo</h1>
+    <div class="info">
+      Database terakhir diupdate: <span id="lastUpdate">-</span><br>
+      <button class="btn-refresh" onclick="loadCSV()">🔄 Refresh Database</button>
+    </div>
 
     <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Masukkan IDPEL / Nomor Meter / Nama...">
+      <input type="text" id="searchInput" placeholder="Masukkan IDPEL / Nomor Meter / Nama">
       <button id="searchButton">Cari</button>
     </div>
 
@@ -35,59 +40,55 @@
   </div>
 
   <footer>
-    @TELWBO<br> AHLINЕ PAK DAYAT
+    @TELWBO<br> AHLINe PAK DAYAT
   </footer>
 
   <script>
     let csvData = [];
 
-    // Parser CSV otomatis (support ; , \t)
     function parseCSV(text) {
       if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
       const firstLine = text.split(/\r?\n/)[0] || '';
-      const delim = firstLine.includes(';') ? ';' :
-                    (firstLine.split('\t').length > firstLine.split(',').length ? '\t' : ',');
-      const rows = [];
-      let row = [], field = '', inQuotes = false, i = 0;
-
-      while (i < text.length) {
-        const c = text[i];
-        if (inQuotes) {
-          if (c === '"') {
-            if (i + 1 < text.length && text[i + 1] === '"') { field += '"'; i += 2; }
-            else { inQuotes = false; i++; }
-          } else { field += c; i++; }
-        } else {
-          if (c === '"') { inQuotes = true; i++; }
-          else if (c === delim) { row.push(field.trim()); field = ''; i++; }
-          else if (c === '\n') { row.push(field.trim()); if (row.some(v => v !== '')) rows.push(row); row = []; field = ''; i++; }
-          else if (c === '\r') { i++; }
-          else { field += c; i++; }
-        }
-      }
-      if (field.length || row.length) { row.push(field.trim()); if (row.some(v => v !== '')) rows.push(row); }
-
-      return { rows, delim };
+      const delim = firstLine.includes(';') ? ';' : ',';
+      const rows = text.split(/\r?\n/).map(r => r.split(delim).map(v => v.trim()));
+      return rows.filter(r => r.some(v => v !== ''));
     }
 
     async function loadCSV() {
-      const response = await fetch("vkrn.csv");
-      const text = await response.text();
-      const { rows } = parseCSV(text);
-      if (!rows.length) return;
-      const headers = rows[0];
-      csvData = rows.slice(1).map(r => {
-        const obj = {};
-        headers.forEach((h, i) => { obj[h.trim()] = (r[i] || "").trim(); });
-        return obj;
-      });
+      try {
+        const response = await fetch("vkrn.csv");
+        const text = await response.text();
+        const rows = parseCSV(text);
+        if (!rows.length) return;
+
+        const headers = rows[0];
+        csvData = rows.slice(1).map(r => {
+          const obj = {};
+          headers.forEach((h, i) => { obj[h.trim()] = (r[i] || "").trim(); });
+          return obj;
+        });
+
+        document.getElementById("lastUpdate").textContent = new Date().toLocaleString("id-ID");
+        console.log("CSV loaded:", csvData.length);
+      } catch (err) {
+        console.error("Error load CSV:", err);
+      }
     }
 
     function performSearch(keyword) {
       keyword = keyword.trim().toLowerCase();
-      const results = csvData.filter(item => 
-        Object.values(item).some(v => (v || "").toLowerCase().includes(keyword))
-      );
+      let results = [];
+
+      if (/^\d+$/.test(keyword)) {
+        results = csvData.filter(item =>
+          Object.values(item).some(v => (v || "").trim() === keyword)
+        );
+      } else {
+        results = csvData.filter(item =>
+          Object.values(item).some(v => (v || "").toLowerCase().includes(keyword))
+        );
+      }
+
       displayResults(results);
     }
 
@@ -107,7 +108,7 @@
         html += "<tr>";
         Object.entries(item).forEach(([k, v]) => {
           if (typeof v === "string" && v.startsWith("http")) {
-            html += `<td><a href="${v}" target="_blank">Link</a></td>`;
+            html += `<td><a href="${v}" target="_blank">Lihat Peta</a></td>`;
           } else {
             html += `<td>${v}</td>`;
           }
