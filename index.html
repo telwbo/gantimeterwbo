@@ -2,146 +2,130 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VKRN ULP Wonosobo</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <style>
-    body { padding: 20px; background: #f8f9fa; }
-    .result-table { margin-top: 20px; }
-    footer { margin-top: 50px; text-align: center; font-size: 0.9em; color: #666; }
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    body { margin: 0; padding: 20px; background: #f5f6fa; }
+    h1 { text-align: center; margin-bottom: 20px; color: #2c3e50; }
+    .container { max-width: 1000px; margin: auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    #searchInput { width: 80%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px 0 0 4px; }
+    #searchButton { padding: 10px 20px; border: none; background: #3498db; color: #fff; font-size: 16px; border-radius: 0 4px 4px 0; cursor: pointer; }
+    #searchButton:hover { background: #2980b9; }
+    .search-box { text-align: center; margin-bottom: 20px; }
+    .results-count { margin-bottom: 10px; font-weight: bold; color: #555; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    th, td { padding: 8px 10px; border: 1px solid #ddd; text-align: left; }
+    th { background: #3498db; color: white; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    .no-results { text-align: center; color: #888; margin-top: 20px; }
+    footer { text-align: center; color: #888; margin-top: 30px; font-size: 14px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2 class="text-center mb-3">VKRN ULP Wonosobo</h2>
-    <p class="text-center text-muted">
-      Database terakhir diupdate: <span id="lastUpdate"></span>
-    </p>
-    <div class="text-center mb-3">
-      <button class="btn btn-success" onclick="refreshData()">🔄 Refresh Database</button>
+    <h1>VKRN ULP Wonosobo</h1>
+
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Masukkan IDPEL / Nomor Meter / Nama...">
+      <button id="searchButton">Cari</button>
     </div>
 
-    <div class="input-group mb-3">
-      <input type="text" id="searchInput" class="form-control" placeholder="Masukkan IDPEL / Nomor Meter / Nama">
-      <button class="btn btn-primary" onclick="searchData()">Cari</button>
-    </div>
-
-    <div id="result"></div>
+    <div id="resultsContainer"></div>
   </div>
 
   <footer>
-    @TELWBO<br> AHLINe PAK DAYAT
+    @TELWBO<br> AHLINЕ PAK DAYAT
   </footer>
 
-<script>
-let allData = [];
+  <script>
+    let csvData = [];
 
-// Fungsi parser CSV (mendukung koma, titik koma, tab)
-function parseCSV(text) {
-  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // strip BOM
-  const firstLine = text.split(/\r?\n/)[0] || '';
+    // Parser CSV otomatis (support ; , \t)
+    function parseCSV(text) {
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+      const firstLine = text.split(/\r?\n/)[0] || '';
+      const delim = firstLine.includes(';') ? ';' :
+                    (firstLine.split('\t').length > firstLine.split(',').length ? '\t' : ',');
+      const rows = [];
+      let row = [], field = '', inQuotes = false, i = 0;
 
-  let delim = ',';
-  const commaCount = firstLine.split(',').length;
-  const tabCount = firstLine.split('\t').length;
-  const semiCount = firstLine.split(';').length;
-  if (semiCount > commaCount && semiCount > tabCount) delim = ';';
-  else if (tabCount > commaCount) delim = '\t';
-
-  const rows = [];
-  let row = [], field = '', inQuotes = false, i = 0;
-  while (i < text.length) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (i + 1 < text.length && text[i + 1] === '"') { field += '"'; i += 2; }
-        else { inQuotes = false; i++; }
-      } else { field += c; i++; }
-    } else {
-      if (c === '"') { inQuotes = true; i++; }
-      else if (c === delim) { row.push(field.trim()); field = ''; i++; }
-      else if (c === '\n') { row.push(field.trim()); field = ''; if (row.some(v => v !== '')) rows.push(row); row = []; i++; }
-      else if (c === '\r') { i++; }
-      else { field += c; i++; }
-    }
-  }
-  if (field.length || row.length) { row.push(field.trim()); if (row.some(v => v !== '')) rows.push(row); }
-  return rows;
-}
-
-// Ambil dua file CSV: eksisting + sanxing
-async function loadData() {
-  allData = [];
-
-  const files = ["vkm.csv", "vkm_sanxing.csv"];
-  for (let file of files) {
-    try {
-      const resp = await fetch(file + "?t=" + Date.now());
-      if (!resp.ok) continue;
-      const text = await resp.text();
-      const rows = parseCSV(text);
-      if (rows.length > 1) {
-        const headers = rows[0].map(h => h.toUpperCase());
-        for (let i = 1; i < rows.length; i++) {
-          if (!rows[i] || rows[i].length === 0) continue;
-          let obj = {};
-          for (let j = 0; j < headers.length; j++) {
-            obj[headers[j]] = rows[i][j] || "";
-          }
-          allData.push(obj);
+      while (i < text.length) {
+        const c = text[i];
+        if (inQuotes) {
+          if (c === '"') {
+            if (i + 1 < text.length && text[i + 1] === '"') { field += '"'; i += 2; }
+            else { inQuotes = false; i++; }
+          } else { field += c; i++; }
+        } else {
+          if (c === '"') { inQuotes = true; i++; }
+          else if (c === delim) { row.push(field.trim()); field = ''; i++; }
+          else if (c === '\n') { row.push(field.trim()); if (row.some(v => v !== '')) rows.push(row); row = []; field = ''; i++; }
+          else if (c === '\r') { i++; }
+          else { field += c; i++; }
         }
       }
-    } catch (e) {
-      console.error("Gagal load", file, e);
+      if (field.length || row.length) { row.push(field.trim()); if (row.some(v => v !== '')) rows.push(row); }
+
+      return { rows, delim };
     }
-  }
 
-  document.getElementById("lastUpdate").textContent =
-    new Date().toLocaleString("id-ID");
-}
+    async function loadCSV() {
+      const response = await fetch("vkrn.csv");
+      const text = await response.text();
+      const { rows } = parseCSV(text);
+      if (!rows.length) return;
+      const headers = rows[0];
+      csvData = rows.slice(1).map(r => {
+        const obj = {};
+        headers.forEach((h, i) => { obj[h.trim()] = (r[i] || "").trim(); });
+        return obj;
+      });
+    }
 
-function refreshData() {
-  loadData().then(() => alert("Database berhasil di-refresh!"));
-}
+    function performSearch(keyword) {
+      keyword = keyword.trim().toLowerCase();
+      const results = csvData.filter(item => 
+        Object.values(item).some(v => (v || "").toLowerCase().includes(keyword))
+      );
+      displayResults(results);
+    }
 
-function searchData() {
-  const q = document.getElementById("searchInput").value.trim().toUpperCase();
-  const resultDiv = document.getElementById("result");
-  resultDiv.innerHTML = "";
-
-  if (!q) return;
-
-  const results = allData.filter(row =>
-    Object.values(row).some(v => (v || "").toUpperCase().includes(q))
-  );
-
-  if (results.length === 0) {
-    resultDiv.innerHTML = `<div class="alert alert-warning">Tidak ditemukan data yang sesuai</div>`;
-    return;
-  }
-
-  let html = `<p><b>📊 Ditemukan ${results.length} data:</b></p>`;
-  html += `<div class="table-responsive"><table class="table table-sm table-bordered result-table"><thead><tr>`;
-  for (let key of Object.keys(results[0])) {
-    html += `<th>${key}</th>`;
-  }
-  html += `</tr></thead><tbody>`;
-  results.forEach(r => {
-    html += `<tr>`;
-    for (let val of Object.values(r)) {
-      if (typeof val === "string" && val.startsWith("http")) {
-        html += `<td><a href="${val}" target="_blank">Link</a></td>`;
-      } else {
-        html += `<td>${val}</td>`;
+    function displayResults(results) {
+      const container = document.getElementById("resultsContainer");
+      if (!results.length) {
+        container.innerHTML = '<div class="no-results">Tidak ditemukan data yang sesuai</div>';
+        return;
       }
-    }
-    html += `</tr>`;
-  });
-  html += `</tbody></table></div>`;
-  resultDiv.innerHTML = html;
-}
 
-// load saat pertama
-loadData();
-</script>
+      let html = `<div class="results-count">📊 Ditemukan ${results.length} data:</div>`;
+      html += "<table><thead><tr>";
+      Object.keys(results[0]).forEach(k => { html += `<th>${k}</th>`; });
+      html += "</tr></thead><tbody>";
+
+      results.forEach(item => {
+        html += "<tr>";
+        Object.entries(item).forEach(([k, v]) => {
+          if (typeof v === "string" && v.startsWith("http")) {
+            html += `<td><a href="${v}" target="_blank">Link</a></td>`;
+          } else {
+            html += `<td>${v}</td>`;
+          }
+        });
+        html += "</tr>";
+      });
+      html += "</tbody></table>";
+      container.innerHTML = html;
+    }
+
+    document.getElementById("searchButton").addEventListener("click", () => {
+      performSearch(document.getElementById("searchInput").value);
+    });
+    document.getElementById("searchInput").addEventListener("keypress", e => {
+      if (e.key === "Enter") performSearch(document.getElementById("searchInput").value);
+    });
+
+    loadCSV();
+  </script>
 </body>
 </html>
