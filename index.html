@@ -1,165 +1,403 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VKRN ULP Wonosobo</title>
-  <style>
-    body{font-family:Arial,Helvetica,sans-serif;background:#f8f9fa;margin:0;padding:0}
-    header{text-align:center;padding:20px}
-    h1{margin:0;color:#222}
-    .container{max-width:960px;margin:auto;padding:20px}
-    #searchBox{width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:16px}
-    #resultsContainer{margin-top:20px}
-    .card{background:#fff;border:1px solid #ddd;border-radius:8px;padding:16px;margin-top:14px}
-    .card h4{margin-top:0}
-    .btn{padding:10px 16px;border:0;border-radius:6px;cursor:pointer}
-    .btn-primary{background:#2f7ce0;color:#fff}
-    .btn-refresh{background:#28a745;color:#fff;margin-top:10px}
-    .statusMsg{margin-left:10px;font-size:13px}
-    .grid{display:grid;grid-template-columns:150px 180px 200px 1fr;gap:10px}
-    .input{padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;width:100%}
-    @media(max-width:720px){.grid{grid-template-columns:1fr}}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VKRN ULP Wonosobo</title>
+
+<style>
+  :root{
+    --bg:#f5f7fb; --card:#fff; --text:#2c3e50; --muted:#6b7b8c;
+    --accent:#4e79ff; --accent-2:#27ae60; --danger:#e74c3c;
+    --line:#e8eef6;
+  }
+  *{box-sizing:border-box;font-family:Inter,Segoe UI,system-ui,Arial,sans-serif}
+  body{margin:0;background:var(--bg);color:var(--text)}
+  .wrap{max-width:980px;margin:30px auto;padding:0 16px}
+  h1{font-weight:800;letter-spacing:.3px;text-align:center;margin:6px 0 4px}
+  .sub{color:var(--muted);text-align:center;font-size:13px;margin-bottom:14px}
+  .toolbar{display:flex;gap:8px;justify-content:center;align-items:center;margin:10px 0 18px}
+  .btn{border:0;background:var(--accent);color:#fff;border-radius:8px;padding:10px 14px;cursor:pointer;font-weight:600}
+  .btn.small{padding:8px 12px;font-size:13px}
+  .btn.success{background:var(--accent-2)}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .search{display:flex;gap:8px;justify-content:center}
+  .search input{width:100%;max-width:720px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:12px 14px;font-size:15px;outline:none}
+  .search .btn{padding:12px 18px}
+  .hint{color:var(--muted);font-size:13px;margin:10px 0}
+  .grid{margin-top:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 4px 14px rgba(30,60,90,.05);overflow:hidden}
+  .card .hdr{background:#eef3ff;border-bottom:1px solid var(--line);padding:10px 14px;font-weight:800}
+  .rows{padding:10px 14px}
+  .row{display:grid;grid-template-columns:210px 1fr;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line)}
+  .row:last-child{border-bottom:0}
+  .key{color:var(--muted);font-weight:600}
+  .val a{color:var(--accent);text-decoration:none}
+  .form{margin-top:12px;border-top:1px solid var(--line);padding:12px 14px;background:#fcfdff}
+  .form h3{margin:4px 0 10px;font-size:15px}
+  .form .fgrid{display:grid;grid-template-columns:160px 220px 1fr auto;gap:8px}
+  .form input,.form select{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .status{font-size:13px;margin-left:10px}
+  .ok{color:var(--accent-2)} .err{color:var(--danger)}
+  footer{color:var(--muted);text-align:center;margin:36px 0 16px;font-size:13px}
+  .badge{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;font-size:12px}
+</style>
 </head>
 <body>
-  <header>
-    <h1>VKRN ULP Wonosobo</h1>
-    <p>Database terakhir diupdate: <span id="lastUpdate"></span></p>
-    <button class="btn btn-refresh" onclick="refreshDb()">🔄 Refresh Database</button>
-  </header>
+<div class="wrap">
+  <h1>VKRN ULP Wonosobo</h1>
 
-  <div class="container">
-    <input id="searchBox" type="text" placeholder="Cari IDPEL / Nama / Nomor meter..." onkeypress="if(event.key==='Enter'){doSearch();}" />
-    <button class="btn btn-primary" style="margin-top:10px" onclick="doSearch()">Cari</button>
-    <div id="resultsContainer"></div>
+  <div class="sub">
+    <span id="lastUpdate">Database terakhir diupdate: -</span>
   </div>
 
-  <script>
-    // ========= KONFIGURASI =========
-    const CSV_KRN = "vkrn.csv";              // CSV lama
-    const CSV_SANXING = "vkrn_sanxing.csv";  // CSV baru
-    const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbx-hoCvWvA_SqZLb8Bng7Pnl_MnIZvuRIvTy_oz4Eb7Ku2odqw6qQAobDN45iC3UI3l/exec";
-    const API_KEY = "VKRN_SECRET"; // samakan dgn Apps Script
+  <div class="toolbar">
+    <button id="btnRefresh" class="btn small">🔄 Refresh Database</button>
+  </div>
 
-    let allData = [];
-    let lastUpdate = new Date().toLocaleString("id-ID");
+  <div class="search">
+    <input id="q" placeholder="Cari IDPEL / nama pelanggan / alamat / nomor meter ..." />
+    <button class="btn" id="btnCari">Cari</button>
+  </div>
 
-    document.getElementById("lastUpdate").innerText = lastUpdate;
+  <div class="hint" id="hint">Ketik lalu Enter / klik Cari. Pencarian menyatukan data KRN & SANXING.</div>
 
-    async function loadCSVs(){
-      const [krn, sanxing] = await Promise.all([fetch(CSV_KRN), fetch(CSV_SANXING)]);
-      const text1 = await krn.text();
-      const text2 = await sanxing.text();
-      const rows1 = parseCSV(text1,",");
-      const rows2 = parseCSV(text2,";");
-      allData = [...rows1,...rows2];
+  <div class="grid" id="resultArea"></div>
+
+  <footer>
+    <div class="badge">@TELWBO • AHLINe PAK DAYAT</div>
+  </footer>
+</div>
+
+<script>
+/* ===========================
+   KONFIGURASI
+=========================== */
+const TEGANGAN_API = {
+  endpoint: 'https://script.google.com/macros/s/AKfycbwBRqq6wiOCXYlLXCwMPOf-wKFQG2v8SAM6M5QH20JytJ199MPGSiu6L19tYuNoUML0/exec',
+  api_key: 'VKRN_SECRET'   // samakan dengan API_KEY di Apps Script
+};
+// nama file CSV (sesuaikan dengan repo kamu)
+const FILE_KRN      = 'vkrn.csv';          // existing KRN
+const FILE_SANXING  = 'vkrn_sanxing.csv';  // SANXING (pakai delimiter ';')
+
+/* ===========================
+   UTIL
+=========================== */
+const $ = sel => document.querySelector(sel);
+
+function fmtTime(ts=Date.now()){
+  return new Date(ts).toLocaleString('id-ID',{dateStyle:'short', timeStyle:'medium'});
+}
+
+function autoDelimiter(firstLine){
+  // pilih delimiter yg paling banyak muncul pada baris header
+  const c = firstLine;
+  const scores = [
+    [',', (c.match(/,/g)||[]).length],
+    [';', (c.match(/;/g)||[]).length],
+    ['\t',(c.match(/\t/g)||[]).length],
+  ].sort((a,b)=>b[1]-a[1]);
+  return scores[0][0] || ',';
+}
+
+function parseCSV(text){
+  // strip BOM
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const first = text.split(/\r?\n/)[0] || '';
+  const delim = autoDelimiter(first);
+
+  const rows = [];
+  let row=[], field='', q=false;
+  for (let i=0;i<text.length;i++){
+    const ch = text[i];
+    if (q){
+      if (ch === '"'){
+        if (text[i+1] === '"'){ field+='"'; i++; }
+        else q=false;
+      } else field += ch;
+    } else {
+      if (ch === '"'){ q=true; }
+      else if (ch === delim){ row.push(field.trim()); field=''; }
+      else if (ch === '\n'){ row.push(field.trim()); if(row.some(v=>v!=='')) rows.push(row); row=[]; field=''; }
+      else if (ch === '\r'){ /*skip*/ }
+      else field += ch;
     }
+  }
+  if (field.length || row.length){ row.push(field.trim()); if(row.some(v=>v!=='')) rows.push(row); }
 
-    function parseCSV(text,sep){
-      const lines=text.trim().split(/\r?\n/);
-      const headers=lines[0].split(sep);
-      return lines.slice(1).map(line=>{
-        const cols=line.split(sep);
-        const obj={};
-        headers.forEach((h,i)=>obj[h.trim()]=cols[i]?cols[i].trim():"");
-        return obj;
-      });
+  const headers = (rows[0]||[]).map(h=>h.trim());
+  const data=[];
+  for (let r=1;r<rows.length;r++){
+    const line=rows[r]; if(!line) continue;
+    const obj={};
+    for(let j=0;j<headers.length;j++){
+      const key = headers[j] || ('COL_'+(j+1));
+      obj[key]= (line[j]??'').toString().trim();
     }
+    const empty = Object.values(obj).every(v=>v==='');
+    if(!empty) data.push(obj);
+  }
+  return data;
+}
 
-    async function doSearch(){
-      const q=document.getElementById("searchBox").value.trim().toLowerCase();
-      const cont=document.getElementById("resultsContainer");
-      cont.innerHTML="";
-      if(!q) return;
-      if(allData.length===0) await loadCSVs();
-      const hasil=allData.filter(r=>
-        (r.IDPEL||"").toLowerCase().includes(q) ||
-        (r.NAMA||"").toLowerCase().includes(q) ||
-        (r.NOMOR_METER_KWH||r.NOMOR_METER_LAMA||"").toLowerCase().includes(q)
-      );
-      if(hasil.length===0){cont.innerHTML="<p>Tidak ditemukan data yang sesuai</p>";return;}
-      hasil.forEach(r=>renderCard(r,cont));
-    }
+function htmlEscape(s){ return (s??'').toString().replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
 
-    function renderCard(data,cont){
-      const card=document.createElement("div");
-      card.className="card";
-      let html=`<h4 class="idpel">IDPEL: ${data.IDPEL||""}</h4>`;
-      for(const k in data){
-        html+=`<div><b>${k}</b>: ${data[k]}</div>`;
-      }
-      // Form input tegangan
-      html+=`
-      <hr>
-      <h4>Input Tegangan (langsung di sini)</h4>
-      <div class="grid">
-        <input id="tegangan" type="number" placeholder="Tegangan (Volt)" class="input" />
-        <select id="petugas" class="input">
-          <option value="">Pilih Petugas</option>
-          <option value="YUSUF">YUSUF</option>
-          <option value="INGGIT">INGGIT</option>
-          <option value="FARIS">FARIS</option>
-        </select>
-        <input id="nohp" type="tel" placeholder="Nomor HP pelanggan" class="input" />
-        <input id="catatan" type="text" placeholder="Catatan (opsional)" class="input" />
+/* ===========================
+   DATASTORE
+=========================== */
+let DB = [];   // gabungan KRN + SANXING
+let lastUpdate = null;
+
+async function loadCSV(url){
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Gagal memuat '+url);
+  const txt = await res.text();
+  return parseCSV(txt);
+}
+
+async function loadAll(){
+  const [krn, san] = await Promise.allSettled([ loadCSV(FILE_KRN), loadCSV(FILE_SANXING) ]);
+  const a = krn.status==='fulfilled' ? krn.value : [];
+  const b = san.status==='fulfilled' ? san.value : [];
+  // Normalisasi beberapa alias kolom agar bisa tampil seragam
+  const norm = (row)=>{
+    const map = new Map(Object.entries(row));
+
+    function pick(...names){ for(const n of names){ if(map.has(n)) return map.get(n); } return ''; }
+
+    return {
+      // umum
+      IDPEL:          pick('IDPEL','Idpel','idpel'),
+      JENIS:          pick('JENIS','Jenis'),
+      NAMA:           pick('NAMA','Nama'),
+      NAMAPNJ:        pick('NAMAPNJ'),
+      NAMA_KELURAHAN: pick('NAMA_KELURAHAN','DESA','Desa'),
+      NAMA_KECAMATAN: pick('NAMA_KECAMATAN','KECAMATAN','Kecamatan'),
+      PETUGAS:        pick('PETUGAS'),
+      UTAMA:          pick('UTAMA'),
+      RT:             pick('RT'),
+      RW:             pick('RW'),
+      NOMOR_METER_KWH:pick('NOMOR_METER_KWH','NOMOR_METER_LAMA','NOMOR_METER_BARU','NO_METER','No Meter'),
+      TARIF:          pick('TARIF'),
+      DAYA:           pick('DAYA'),
+      MERK_METER_KWH: pick('MERK_METER_KWH'),
+      TYPE_METER_KWH: pick('TYPE_METER_KWH'),
+      NOMOR_JURUSAN_TIANG: pick('NOMOR_JURUSAN_TIANG'),
+      KOORDINAT_X:    pick('KOORDINAT_X','LAT'),
+      KOORDINAT_Y:    pick('KOORDINAT_Y','LON'),
+      KD_KEL:         pick('KD_KEL'),
+      PETA:           pick('PETA','Maps','MAP'),
+      // atribut KRN lama
+      ALAMAT:         pick('ALAMAT'),
+      TARIF_INDEX:    pick('TARIF_INDEX'),
+      UNITUP:         pick('UNITUP'),
+      VKRN_LAMA:      pick('VKRN_LAMA'),
+      AGENDA:         pick('AGENDA'),
+      TGLAKTIVASI:    pick('TGLAKTIVASI','TGL AKTIVASI'),
+      STATUS:         pick('STATUS'),
+      TGLCATAT:       pick('TGLCATAT'),
+    };
+  };
+
+  DB = [...a.map(norm), ...b.map(norm)];
+  lastUpdate = Date.now();
+  $('#lastUpdate').textContent = `Database terakhir diupdate: ${fmtTime(lastUpdate)}`;
+}
+
+/* ===========================
+   RENDER
+=========================== */
+function mkRow(key,val){
+  const v = (val??'')+''; 
+  const isURL = /^https?:\/\//i.test(v);
+  return `
+    <div class="row">
+      <div class="key">${htmlEscape(key)}</div>
+      <div class="val">${isURL? `<a target="_blank" rel="noopener" href="${htmlEscape(v)}">Link</a>` : htmlEscape(v)}</div>
+    </div>
+  `;
+}
+
+function resultCard(item){
+  // Maps link dari koordinat
+  let maps = '';
+  const x = (item.KOORDINAT_X||'').replace(',', '.').replace(/\s+/g,'');
+  const y = (item.KOORDINAT_Y||'').replace(',', '.').replace(/\s+/g,'');
+  if (x && y && !isNaN(Number(x)) && !isNaN(Number(y))){
+    maps = `https://www.google.com/maps?q=${x},${y}`;
+  }
+
+  const hdr = `IDPEL: ${htmlEscape(item.IDPEL||'-')}`;
+  const rows = [
+    ['IDPEL', item.IDPEL],
+    ['JENIS', item.JENIS],
+    ['NAMA', item.NAMA],
+    ['NAMAPNJ', item.NAMAPNJ],
+    ['NAMA_KELURAHAN', item.NAMA_KELURAHAN],
+    ['NAMA_KECAMATAN', item.NAMA_KECAMATAN],
+    ['PETUGAS', item.PETUGAS],
+    ['UTAMA', item.UTAMA],
+    ['RT', item.RT],
+    ['RW', item.RW],
+    ['NOMOR_METER_KWH', item.NOMOR_METER_KWH],
+    ['TARIF', item.TARIF],
+    ['DAYA', item.DAYA],
+    ['MERK_METER_KWH', item.MERK_METER_KWH],
+    ['TYPE_METER_KWH', item.TYPE_METER_KWH],
+    ['NOMOR_JURUSAN_TIANG', item.NOMOR_JURUSAN_TIANG],
+    ['KOORDINAT_X', item.KOORDINAT_X],
+    ['KOORDINAT_Y', item.KOORDINAT_Y],
+    ['KD_KEL', item.KD_KEL],
+    ['PETA', maps || item.PETA || ''],
+    // beberapa kolom lama (kalau ada)
+    ['ALAMAT', item.ALAMAT],
+    ['TARIF_INDEX', item.TARIF_INDEX],
+    ['UNITUP', item.UNITUP],
+    ['VKRN_LAMA', item.VKRN_LAMA],
+    ['AGENDA', item.AGENDA],
+    ['TGLAKTIVASI', item.TGLAKTIVASI],
+    ['STATUS', item.STATUS],
+    ['TGLCATAT', item.TGLCATAT],
+  ].filter(([k,v]) => (v??'')!=='' );
+
+  // Opsi petugas default
+  const petugasDefault = item.PETUGAS || '';
+
+  return `
+  <div class="card">
+    <div class="hdr">${hdr}</div>
+    <div class="rows">
+      ${rows.map(([k,v])=>mkRow(k,v)).join('')}
+
+      <div class="form">
+        <h3>Input Tegangan (langsung di sini)</h3>
+        <div class="fgrid">
+          <input id="f-tegangan" type="number" placeholder="Tegangan (Volt)"/>
+          <select id="f-petugas">
+            ${[petugasDefault,'FARIS','INGGIT','TES'].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).map(v=>`<option ${v===petugasDefault?'selected':''}>${v}</option>`).join('')}
+          </select>
+          <input id="f-catatan" placeholder="Catatan (opsional)"/>
+          <button class="btn success" id="btnSimpan">Simpan</button>
+        </div>
+        <div class="status" id="saveStatus"></div>
       </div>
-      <div style="margin-top:12px;display:flex;gap:10px;align-items:center;">
-        <button class="btn btn-primary" onclick="simpanLog('${data.IDPEL||""}')">Simpan</button>
-        <small id="statusMsg" class="statusMsg"></small>
-      </div>`;
-      card.innerHTML=html;
-      cont.appendChild(card);
+    </div>
+  </div>
+  `;
+}
+
+/* ===========================
+   SEARCH
+=========================== */
+function search(q){
+  q = (q||'').trim().toLowerCase();
+  if (!q) return [];
+
+  // Prioritas: IDPEL exact match
+  const exact = DB.filter(r => (r.IDPEL||'').toString().trim()===q);
+  if (exact.length) return exact;
+
+  // otherwise: contains di semua kolom
+  return DB.filter(row=>{
+    return Object.values(row).some(v => (v||'').toString().toLowerCase().includes(q));
+  });
+}
+
+/* ===========================
+   SAVE to Google Apps Script
+=========================== */
+async function saveToSheet({idpel, tegangan, petugas, catatan}){
+  const status = $('#saveStatus');
+  status.textContent = 'Menyimpan...';
+  status.className = 'status';
+
+  try{
+    const body = new URLSearchParams({
+      api_key: TEGANGAN_API.api_key,
+      idpel: (idpel||'').toString().trim(),
+      tegangan: (tegangan||'').toString().trim(),
+      petugas: (petugas||'').toString().trim(),
+      catatan: (catatan||'').toString().trim()
+    });
+
+    const res = await fetch(TEGANGAN_API.endpoint, {
+      method: 'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+      body
+    });
+
+    const json = await res.json().catch(()=>({ok:false,error:'response json error'}));
+    if (json.ok){
+      status.textContent = `✅ Tersimpan ${fmtTime(json.timestamp||Date.now())}`;
+      status.className = 'status ok';
+    } else {
+      status.textContent = `❌ Gagal: ${json.error||'unknown'}`;
+      status.className = 'status err';
     }
+  }catch(e){
+    status.textContent = '❌ Gagal konek server';
+    status.className = 'status err';
+  }
+}
 
-    function normalizePhone(raw){
-      const d=(raw||"").replace(/\D/g,"");
-      if(!d) return "";
-      if(d.startsWith("62")) return d;
-      if(d.startsWith("0")) return "62"+d.slice(1);
-      return d;
+/* ===========================
+   UI HOOKS
+=========================== */
+function wireCardActions(idpel){
+  const btn = $('#btnSimpan');
+  if (!btn) return;
+  btn.addEventListener('click', ()=>{
+    const tegangan = $('#f-tegangan').value;
+    const petugas  = $('#f-petugas').value;
+    const catatan  = $('#f-catatan').value;
+    if (!tegangan){
+      $('#saveStatus').textContent = 'Masukkan tegangan';
+      $('#saveStatus').className = 'status err';
+      return;
     }
+    saveToSheet({idpel, tegangan, petugas, catatan});
+  });
+}
 
-    async function simpanLog(idpel){
-      const tegangan=Number(document.getElementById("tegangan").value||0);
-      const petugas=(document.getElementById("petugas").value||"").trim();
-      const nohpRaw=document.getElementById("nohp").value||"";
-      const nohp=normalizePhone(nohpRaw);
-      const catatan=document.getElementById("catatan").value||"";
-      const statusEl=document.getElementById("statusMsg");
+function showResults(list){
+  const area = $('#resultArea');
+  if (!list.length){
+    area.innerHTML = `<div class="hint" style="background:#fff;border:1px solid var(--line);padding:14px;border-radius:10px;">Tidak ditemukan data yang sesuai</div>`;
+    return;
+  }
+  // tampilkan hanya item pertama (paling relevan) untuk fokus
+  const item = list[0];
+  area.innerHTML = resultCard(item);
+  wireCardActions(item.IDPEL);
+}
 
-      if(!idpel){alert("IDPEL kosong");return;}
-      if(!tegangan){alert("Tegangan wajib");return;}
-      if(!petugas){alert("Petugas wajib");return;}
-      if(tegangan<220 && !nohp){alert("Nomor HP wajib jika tegangan <220V");return;}
+/* ===========================
+   INIT
+=========================== */
+async function init(){
+  $('#lastUpdate').textContent = 'Memuat database...';
+  try{
+    await loadAll();
+  }catch(e){
+    $('#lastUpdate').textContent = 'Gagal memuat database.';
+  }
 
-      statusEl.textContent="Menyimpan...";
-      statusEl.style.color="#6c757d";
+  $('#btnRefresh').addEventListener('click', async ()=>{
+    $('#lastUpdate').textContent = 'Refresh database...';
+    await loadAll();
+  });
 
-      try{
-        const body=new URLSearchParams({
-          idpel,tegangan,petugas,nohp,catatan,api_key:API_KEY
-        });
-        const res=await fetch(GAS_ENDPOINT,{method:"POST",body});
-        const data=await res.json();
-        if(data.ok){
-          statusEl.textContent="Tersimpan ("+new Date().toLocaleString("id-ID")+")";
-          statusEl.style.color="#2e7d32";
-        }else{
-          statusEl.textContent="Gagal: "+(data.error||"unknown");
-          statusEl.style.color="#c62828";
-        }
-      }catch(err){
-        statusEl.textContent="Error koneksi: "+err;
-        statusEl.style.color="#c62828";
-      }
-    }
+  const doSearch = ()=>{
+    const q = $('#q').value;
+    const res = search(q);
+    showResults(res);
+  };
+  $('#btnCari').addEventListener('click', doSearch);
+  $('#q').addEventListener('keypress', (e)=>{ if(e.key==='Enter') doSearch(); });
+}
 
-    function refreshDb(){
-      allData=[];
-      document.getElementById("resultsContainer").innerHTML="";
-      document.getElementById("lastUpdate").innerText=new Date().toLocaleString("id-ID");
-    }
-  </script>
+document.addEventListener('DOMContentLoaded', init);
+</script>
 </body>
 </html>
