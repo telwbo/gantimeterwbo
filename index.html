@@ -3,317 +3,325 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VKRN ULP Wonosobo</title>
+  <title>GANTI METER PRABAYAR KRN-SANXING ULP Wonosobo</title>
   <style>
-    :root{--pri:#3498db;--bg:#f5f6fa}
-    *{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
-    body{margin:0;background:var(--bg)}
-    .wrap{max-width:1100px;margin:auto;padding:28px}
-    h1{margin:0 0 16px;text-align:center;color:#2c3e50}
-    .top-info{color:#666;text-align:center;margin-bottom:14px}
-    .btn{display:inline-flex;align-items:center;gap:8px;border:none;border-radius:8px;padding:10px 14px;cursor:pointer;background:#27ae60;color:#fff}
-    .btn:hover{opacity:.92}
-    .search{display:flex;gap:8px;margin:14px auto 20px;max-width:900px}
-    .search input{flex:1;padding:12px 14px;border:1px solid #cfd6e0;border-radius:8px;font-size:16px;background:#fff}
-    .search button{padding:12px 18px;border:none;background:var(--pri);color:#fff;border-radius:8px;cursor:pointer}
-    .search button:hover{filter:brightness(.95)}
-    .count{color:#6b7785;margin:8px 0 14px;font-weight:600}
-    .card{background:#fff;border:1px solid #e9eef5;border-radius:12px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.04)}
-    .kv{display:grid;grid-template-columns:220px 1fr;gap:10px 14px;font-size:14px}
-    .kv div b{color:#2c3e50}
-    .idpel{background:#e8f6ff;border-left:3px solid var(--pri);padding:8px;border-radius:6px;margin-bottom:10px;font-weight:700}
-    .warn{background:#fff3cd;border:1px solid #ffe08a;color:#856404;border-radius:10px;padding:14px;margin-top:8px}
-    footer{text-align:center;color:#8a8f99;margin-top:28px;font-size:14px}
-    @media(max-width:720px){.kv{grid-template-columns:1fr}}
+    :root{
+      --bg:#f5f7fb; --card:#fff; --text:#2c3e50; --muted:#6b7280;
+      --pri:#3b82f6; --pri-dark:#2563eb; --ok:#16a34a; --warn:#f59e0b; --err:#ef4444; --line:#e5e7eb;
+    }
+    *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Open Sans','Helvetica Neue',sans-serif}
+    body{margin:0;background:var(--bg);color:var(--text)}
+    .wrap{max-width:1100px;margin:0 auto;padding:24px}
+    h1{margin:8px 0 18px;text-align:center;font-size:28px;font-weight:800;letter-spacing:.3px}
+    .topbar{display:flex;gap:10px;justify-content:center;align-items:center;margin-bottom:16px}
+    .pill{font-size:12px;color:var(--muted)}
+    .btn{appearance:none;border:0;border-radius:8px;background:var(--pri);color:#fff;padding:10px 14px;font-weight:600;cursor:pointer}
+    .btn:hover{background:var(--pri-dark)}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .searchRow{display:flex;gap:8px;justify-content:center;margin:16px 0 8px}
+    .searchRow input{width:min(760px,92vw);padding:12px 14px;border:1px solid var(--line);border-radius:8px;font-size:16px;background:#fff}
+    .searchRow button{padding:12px 16px}
+    .hint{color:var(--muted);font-size:12px;text-align:center;margin-bottom:10px}
+    .count{font-weight:700;color:var(--muted);margin:8px 0}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+    .idpelBar{background:#eff6ff;border:1px solid #dbeafe;color:#1e40af;padding:8px 10px;border-radius:8px;font-weight:700;margin-bottom:10px;word-break:break-all}
+    .row{display:flex;gap:8px;margin:4px 0}
+    .key{min-width:160px;color:var(--muted);font-size:13px}
+    .val{flex:1;font-size:15px;word-break:break-word}
+    .form{border-top:1px dashed var(--line);margin-top:10px;padding-top:10px}
+    .form .row{align-items:center}
+    .form input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px}
+    .form .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .act{display:flex;align-items:center;gap:8px;margin-top:8px}
+    .mini{font-size:12px;color:var(--muted)}
+    .ok{color:var(--ok)} .warn{color:var(--warn)} .err{color:var(--err)}
+    footer{margin:28px 0 10px;text-align:center;color:var(--muted);font-size:13px}
+    @media (max-width:560px){.form .grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>VKRN ULP Wonosobo</h1>
+    <h1>GANTI METER PRABAYAR KRN-SANXING ULP Wonosobo</h1>
 
-    <div class="top-info">
-      Database terakhir diupdate: <span id="lastUpdate">-</span><br/>
-      <button class="btn" id="btnRefresh">🔄 Refresh Database</button>
+    <div class="topbar">
+      <span class="pill">Database terakhir diupdate: <span id="lastUpdate">-</span></span>
+      <button class="btn" id="refreshBtn">🔄 Refresh Database</button>
     </div>
 
-    <div class="search">
-      <input id="q" placeholder="Cari IDPEL / Nomor Meter / Nama / Alamat..." />
-      <button id="go">Cari</button>
+    <div class="searchRow">
+      <input id="q" type="text" placeholder="Cari IDPEL / Nama / Alamat / No Meter …">
+      <button class="btn" id="go">Cari</button>
     </div>
+    <div class="hint">Masukkan apapun (IDPEL, nama pelanggan, alamat, nomor meter). Sistem otomatis membaca CSV KRN & SANXING.</div>
 
-    <div id="out"></div>
+    <div id="count" class="count"></div>
+    <div id="cards" class="cards"></div>
 
     <footer>
       @TELWBO<br/>AHLINe PAK DAYAT
     </footer>
   </div>
 
-<script>
-/* ====== KONFIG: Endpoint Apps Script untuk input tegangan ======
-   >>> samakan API_KEY di sini dengan const API_KEY di Apps Scriptmu <<<
-*/
-const TEGANGAN_API = {
-  enabled: true,
-  endpoint: 'https://script.google.com/macros/s/AKfycbwdr1sl6DvW8DVO_3zOCkAI3Tdoflot8pOXSn_zDlC4O9i8T64GqKk30njTuYNXyYUz/exec',
-  apiKey: 'VKRN_SECRET'
-};
+  <script>
+    /* =========================
+       KONFIGURASI
+    ========================== */
+    // CSV yang dicoba dibaca (kalau salah satu tidak ada, akan di-skip)
+    const CSV_FILES = ['vkrn.csv', 'vkrn_sanxsing.csv', 'vkrn_sanxsing.csv.csv'];
 
-/* ========= Helpers ========= */
-const clean = s => (s ?? '').toString().replace(/\uFEFF/g,'').trim(); // trim + hapus BOM
-const digitsOnly = s => clean(s).replace(/[^\d]/g,'');                 // ambil angka saja
+    // Endpoint Apps Script Web App (DEPLOY /exec), & API KEY HARUS sama dengan Code.gs
+    const TEGANGAN_API = {
+      enabled : true,
+      endpoint: 'https://script.google.com/macros/s/AKfycbzjAAfXuuy2TbySJvxenubjrOmUgA-2LB4T9AJlxVo46Pt42yAEFWMBpsiGoBG-5aHi/exec',
+      apiKey  : 'VKRN_SECRET'
+    };
 
-function normalizeKey(k){
-  // samakan nama header (hapus spasi ganda & titik, uppercase)
-  return clean(k).replace(/\s+/g,' ').replace(/\./g,'').toUpperCase();
-}
+    // simpan waktu refresh (fake timestamp lokal)
+    const LAST_KEY = 'db_last_update';
 
-// Parser CSV: dukung ; , tab, dan "..."
-function parseCSV(text){
-  if (text.charCodeAt(0)===0xFEFF) text=text.slice(1);
-  const firstLine=(text.split(/\r?\n/)[0]||'');
-  const scores={
-    ';': (firstLine.match(/;/g)||[]).length,
-    ',': (firstLine.match(/,/g)||[]).length,
-    '\t': (firstLine.match(/\t/g)||[]).length
-  };
-  const delim = Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0];
-
-  const rows=[]; let row=[], field='', inQuotes=false;
-  for (let i=0;i<text.length;i++){
-    const c=text[i];
-    if (inQuotes){
-      if (c==='"'){
-        if (text[i+1]==='"'){ field+='"'; i++; }
-        else { inQuotes=false; }
-      } else { field+=c; }
-    } else {
-      if (c==='"'){ inQuotes=true; }
-      else if (c===delim){ row.push(clean(field)); field=''; }
-      else if (c==='\n'){ row.push(clean(field)); if(row.some(v=>v!=='')) rows.push(row); row=[]; field=''; }
-      else if (c!=='\r'){ field+=c; }
+    /* =========================
+       UTIL / HELPERS
+    ========================== */
+    const $ = sel => document.querySelector(sel);
+    function fmtDT(d){ try{ return new Date(d).toLocaleString('id-ID'); }catch{ return d } }
+    function setLastUpdate(ts){ localStorage.setItem(LAST_KEY, String(ts)); $('#lastUpdate').textContent = fmtDT(ts); }
+    function toFormBody(obj){
+      return Object.entries(obj).map(([k,v]) => encodeURIComponent(k)+'='+encodeURIComponent(v ?? '')).join('&');
     }
-  }
-  if (field.length||row.length){ row.push(clean(field)); if(row.some(v=>v!=='')) rows.push(row); }
-  return rows;
-}
+    function safeId(id) { return String(id).replace(/[^\w\-:.]/g,'_'); }
 
-function mapsLinkFromRow(obj){
-  // url maps langsung?
-  for (const v of Object.values(obj)){
-    const s = clean(v);
-    if (/https?:\/\/(www\.)?google\.[^/]+\/maps\?q=/i.test(s)) return s;
-  }
-  // KOORDINAT_X / KOORDINAT_Y
-  const kx = Object.keys(obj).find(k=>k.includes('KOORDINAT_X'));
-  const ky = Object.keys(obj).find(k=>k.includes('KOORDINAT_Y'));
-  if (kx && ky){
-    let x = clean(obj[kx]), y = clean(obj[ky]);
-    // betulkan " -7 204426 " => " -7.204426 "
-    if (/^-?\d+\s+\d+$/.test(x)) x = x.replace(/\s+/,'.');
-    if (/^-?\d+\s+\d+$/.test(y)) y = y.replace(/\s+/,'.');
-    if (!isNaN(Number(x)) && !isNaN(Number(y))) return `https://www.google.com/maps?q=${x},${y}`;
-  }
-  return '';
-}
-
-/* ========= Loaders ========= */
-let DATA=[];
-
-async function loadCSVFile(filename){
-  try{
-    const res = await fetch(`${filename}?t=${Date.now()}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    const rows = parseCSV(text);
-    if (!rows.length) return [];
-
-    // header → key normalized
-    const rawHeaders = rows[0];
-    const headers = rawHeaders.map(h=>normalizeKey(h));
-
-    const out=[];
-    for (let i=1;i<rows.length;i++){
-      const r = rows[i];
-      if (!r || !r.length) continue;
-      const obj={};
-      for (let j=0;j<headers.length;j++){
-        const key = headers[j] || `COL_${j+1}`;
-        obj[key] = clean(r[j]);
+    // CSV parser: delimiter otomatis (',' ';' atau '\t'), handle kutip
+    function parseCSV(text){
+      // buang BOM
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+      const headLine = text.split(/\r?\n/)[0] || '';
+      const cand = [',',';','\t'];
+      let delim = ',', best = 0;
+      for (const d of cand){
+        const c = (headLine.match(new RegExp(`\\${d}`,'g'))||[]).length;
+        if (c>best){best=c;delim=d;}
       }
-      // kolom canon untuk matching angka
-      if (obj['IDPEL']) obj['IDPEL_CANON'] = digitsOnly(obj['IDPEL']);
-      const meterKey = ['NOMOR_METER_LAMA','NOMOR_METER_KWH','NOMOR METER LAMA','NOMOR METER KWH']
-        .map(k=>normalizeKey(k)).find(k=>k in obj);
-      if (meterKey) obj['METER_CANON'] = digitsOnly(obj[meterKey]);
-
-      out.push(obj);
-    }
-    console.log(`Loaded ${out.length} from ${filename}`);
-    return out;
-  }catch(e){
-    console.warn('Load error', filename, e);
-    return [];
-  }
-}
-
-async function loadAll(){
-  DATA = [];
-  // KRN
-  DATA.push(...await loadCSVFile('vkrn.csv'));
-  // SANXING (nama normal atau fallback .csv.csv)
-  let san = await loadCSVFile('vkrn_sanxing.csv');
-  if (!san.length) san = await loadCSVFile('vkrn_sanxing.csv.csv');
-  DATA.push(...san);
-
-  document.getElementById('lastUpdate').textContent =
-    new Date().toLocaleString('id-ID');
-  console.log('TOTAL rows:', DATA.length);
-}
-
-/* ========= Submit Tegangan (Apps Script) ========= */
-async function submitTeganganToServer({ idpel, tegangan, petugas, catatan }) {
-  if (!TEGANGAN_API.enabled) return { ok:false, error:'endpoint disabled' };
-  const body = new URLSearchParams({
-    idpel, tegangan, petugas: petugas || '', catatan: catatan || '', api_key: TEGANGAN_API.apiKey
-  });
-  const res = await fetch(TEGANGAN_API.endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-    body
-  });
-  const data = await res.json().catch(()=>({ ok:false, error:'invalid json' }));
-  return data;
-}
-
-/* ========= Search & Render ========= */
-function search(q){
-  q = clean(q);
-  if (!q){ return renderWarn('Silakan masukkan kata kunci.'); }
-
-  let results=[];
-  if (/^\d+$/.test(q)){
-    const nd = digitsOnly(q);
-    results = DATA.filter(row =>
-      row.IDPEL_CANON === nd || row.METER_CANON === nd ||
-      Object.values(row).some(v => digitsOnly(v).length>0 && digitsOnly(v)===nd)
-    );
-  } else {
-    const nlc = q.toLowerCase();
-    results = DATA.filter(row =>
-      Object.values(row).some(v => clean(v).toLowerCase().includes(nlc))
-    );
-  }
-  render(results);
-}
-
-function renderWarn(msg){
-  document.getElementById('out').innerHTML =
-    `<div class="warn">${msg}</div>`;
-}
-
-function render(rows){
-  const out = document.getElementById('out');
-  if (!rows.length) return renderWarn('Tidak ditemukan data yang sesuai');
-
-  let html = `<div class="count">📊 Ditemukan ${rows.length} data:</div>`;
-  window.__tegForms = []; // reset daftar form
-
-  rows.forEach(row=>{
-    const keys = Object.keys(row).filter(k => !k.endsWith('_CANON'));
-    const idpel = row['IDPEL'] || '';
-
-    html += `<div class="card">`;
-    if (idpel) html += `<div class="idpel">IDPEL: ${clean(idpel)}</div>`;
-
-    html += `<div class="kv">`;
-    keys.forEach(k=>{
-      const val = clean(row[k]);
-      if (val==='') return;
-      if (/^https?:\/\//i.test(val)){
-        html += `<div><b>${k}</b></div><div><a href="${val}" target="_blank" rel="noopener">Link</a></div>`;
-      } else {
-        html += `<div><b>${k}</b></div><div>${val}</div>`;
-      }
-    });
-
-    // peta otomatis
-    const maps = mapsLinkFromRow(row);
-    if (maps){
-      html += `<div><b>PETA</b></div><div><a href="${maps}" target="_blank" rel="noopener">Lihat di Google Maps</a></div>`;
-    }
-
-    // Form input tegangan inline
-    if (TEGANGAN_API.enabled && idpel) {
-      const formId = `f_${digitsOnly(idpel)}`;
-      html += `
-        <div style="grid-column: 1 / -1; margin-top:10px; padding-top:10px; border-top:1px dashed #e1e7ef;">
-          <b>Input Tegangan (langsung di sini)</b>
-          <form id="${formId}" class="teg-form" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:6px;">
-            <input type="number" step="0.01" min="0" placeholder="Tegangan (Volt)" name="tegangan" required
-                   style="padding:8px 10px; border:1px solid #ccd6e3; border-radius:6px;">
-            <input type="text" placeholder="Petugas" name="petugas"
-                   style="padding:8px 10px; border:1px solid #ccd6e3; border-radius:6px;">
-            <input type="text" placeholder="Catatan" name="catatan"
-                   style="flex:1; padding:8px 10px; border:1px solid #ccd6e3; border-radius:6px;">
-            <button type="submit" style="padding:8px 12px; border:none; background:#27ae60; color:#fff; border-radius:6px; cursor:pointer;">Simpan</button>
-            <span class="status" style="margin-left:6px; color:#6b7785;"></span>
-          </form>
-        </div>
-      `;
-      window.__tegForms.push({ formId, idpel });
-    }
-
-    html += `</div></div>`; // end .kv & .card
-  });
-
-  out.innerHTML = html;
-
-  // aktifkan handler submit untuk setiap form tegangan
-  if (window.__tegForms && window.__tegForms.length) {
-    window.__tegForms.forEach(({ formId, idpel }) => {
-      const form = document.getElementById(formId);
-      if (!form) return;
-      form.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-        const statusEl = form.querySelector('.status');
-        statusEl.style.color = '#6b7785';
-        statusEl.textContent = 'Menyimpan...';
-        const tegangan = form.tegangan.value;
-        const petugas  = form.petugas.value;
-        const catatan  = form.catatan.value;
-        try {
-          const res = await submitTeganganToServer({ idpel, tegangan, petugas, catatan });
-          if (res.ok) {
-            statusEl.style.color = '#27ae60';
-            statusEl.textContent = 'Tersimpan ✓';
-            form.reset();
-          } else {
-            statusEl.style.color = '#c0392b';
-            statusEl.textContent = 'Gagal: ' + (res.error || 'server error');
-          }
-        } catch (e) {
-          statusEl.style.color = '#c0392b';
-          statusEl.textContent = 'Gagal konek server';
+      const rows=[], len=text.length; let i=0, field='', row=[], inQ=false;
+      while(i<len){
+        const ch=text[i];
+        if(inQ){
+          if(ch==='\"'){
+            if(i+1<len && text[i+1]==='\"'){ field+='\"'; i+=2; } else { inQ=false; i++; }
+          }else{ field+=ch; i++; }
+        }else{
+          if(ch==='\"'){ inQ=true; i++; }
+          else if(ch===delim){ row.push(field.trim()); field=''; i++; }
+          else if(ch==='\n'){ row.push(field.trim()); field=''; if(row.some(v=>v!=='')) rows.push(row); row=[]; i++; }
+          else if(ch==='\r'){ i++; }
+          else{ field+=ch; i++; }
         }
+      }
+      if(field.length || row.length){ row.push(field.trim()); if(row.some(v=>v!=='')) rows.push(row); }
+      return { rows, delim };
+    }
+
+    function normalizeObj(headers, line){
+      const obj={};
+      for(let j=0;j<headers.length;j++){
+        const key = (headers[j]||'').trim();
+        const val = (line[j]??'').toString().trim();
+        if(key) obj[key]=val;
+      }
+      return obj;
+    }
+
+    // cari KEY IDPEL & KOORDINAT
+    function findKey(obj, want){
+      const keys = Object.keys(obj);
+      if(want==='idpel'){
+        return keys.find(k => k.toLowerCase().replace(/\s+/g,'')==='idpel') || 
+               keys.find(k => /id[\s_]?pel/i.test(k)) || null;
+      }
+      if(want==='x'){ return keys.find(k => k.toLowerCase().includes('koordinat_x')) || null; }
+      if(want==='y'){ return keys.find(k => k.toLowerCase().includes('koordinat_y')) || null; }
+      return null;
+    }
+
+    /* =========================
+       DATA LOADER
+    ========================== */
+    let DATA = [];
+    async function loadOneCSV(path){
+      try{
+        const res = await fetch(path, {cache:'no-store'});
+        if(!res.ok) throw new Error('not ok');
+        const txt = await res.text();
+        const {rows} = parseCSV(txt);
+        if(!rows.length) return [];
+        const headers = rows[0];
+        const arr=[];
+        for(let r=1;r<rows.length;r++){
+          const line = rows[r];
+          if(!line || !line.length) continue;
+          const obj = normalizeObj(headers, line);
+          const empty = Object.values(obj).every(v=>v==='');
+          if(!empty) arr.push(obj);
+        }
+        return arr;
+      }catch{ return []; }
+    }
+
+    async function loadAll(){
+      const out=[];
+      for(const f of CSV_FILES){
+        const part = await loadOneCSV(f);
+        if(part.length) out.push(...part);
+      }
+      return out;
+    }
+
+    /* =========================
+       RENDER
+    ========================== */
+    function render(results){
+      const cards = $('#cards');
+      $('#count').textContent = results.length ? `📊 Ditemukan ${results.length} data:` : '';
+      if(!results.length){ cards.innerHTML=''; return; }
+
+      const fr = document.createDocumentFragment();
+      results.forEach(item=>{
+        const idKey = findKey(item,'idpel');
+        const idpel = idKey ? (item[idKey]||'').trim() : '';
+        const kid = safeId(idpel||Math.random().toString(36).slice(2));
+
+        // koordinat & peta
+        const kxKey = findKey(item,'x'), kyKey = findKey(item,'y');
+        const kx = kxKey?item[kxKey]:'', ky = kyKey?item[kyKey]:'';
+        const hasCoord = kx && ky && !isNaN(Number(kx)) && !isNaN(Number(ky));
+        const gmaps = hasCoord ? `https://www.google.com/maps?q=${kx},${ky}` : '';
+
+        const card = document.createElement('div');
+        card.className='card';
+
+        // IDPEL bar
+        const bar = document.createElement('div');
+        bar.className='idpelBar';
+        bar.textContent = idpel ? `IDPEL: ${idpel}` : 'IDPEL: -';
+        card.appendChild(bar);
+
+        // List semua key/value
+        Object.keys(item).forEach(k=>{
+          const row = document.createElement('div'); row.className='row';
+          const key = document.createElement('div'); key.className='key'; key.textContent = k;
+          const val = document.createElement('div'); val.className='val';
+          const v = item[k]??'';
+          if(/^https?:\/\//i.test(v)) {
+            const a=document.createElement('a'); a.href=v; a.target='_blank'; a.rel='noopener'; a.textContent='Link';
+            val.appendChild(a);
+          } else { val.textContent=v; }
+          row.appendChild(key); row.appendChild(val); card.appendChild(row);
+        });
+
+        if(hasCoord){
+          const row = document.createElement('div'); row.className='row';
+          const key = document.createElement('div'); key.className='key'; key.textContent='PETA';
+          const val = document.createElement('div'); val.className='val';
+          const a=document.createElement('a'); a.href=gmaps; a.target='_blank'; a.rel='noopener'; a.textContent='Lihat di Google Maps';
+          val.appendChild(a); row.appendChild(key); row.appendChild(val); card.appendChild(row);
+        }
+
+        // Form tegangan
+        const form = document.createElement('div'); form.className='form';
+        form.innerHTML = `
+          <div class="row"><div class="key" style="font-weight:700">Input Tegangan</div><div class="val mini">Simpan entrian petugas tanpa membuka tab baru</div></div>
+          <div class="grid">
+            <input id="teg-${kid}" type="number" inputmode="numeric" placeholder="Tegangan (V)" />
+            <input id="pet-${kid}" type="text" placeholder="Petugas" value="${(item.PETUGAS||'').toString().trim()}" />
+          </div>
+          <div class="row" style="margin-top:8px">
+            <input id="cat-${kid}" type="text" placeholder="Catatan (opsional)" />
+          </div>
+          <div class="act">
+            <button id="btn-${kid}" class="btn" onclick="submitTegangan('${(idpel||'').replace(/'/g,'\\\'')}', '${kid}')">Simpan</button>
+            <span id="stat-${kid}" class="mini"></span>
+          </div>
+        `;
+        card.appendChild(form);
+
+        fr.appendChild(card);
       });
+      cards.innerHTML=''; cards.appendChild(fr);
+    }
+
+    function doSearch(){
+      const q = ($('#q').value||'').toLowerCase().trim();
+      if(!q){ $('#cards').innerHTML=''; $('#count').textContent=''; return; }
+      const results = DATA.filter(obj=>{
+        return Object.values(obj).some(v => (v??'').toString().toLowerCase().includes(q));
+      });
+      render(results);
+    }
+
+    /* =========================
+       SUBMIT TEGANGAN (POST)
+    ========================== */
+    async function submitTegangan(idpel, kid){
+      if(!TEGANGAN_API.enabled){ alert('Input tegangan dimatikan.'); return; }
+      const tegEl = document.querySelector(`#teg-${kid}`);
+      const petEl = document.querySelector(`#pet-${kid}`);
+      const catEl = document.querySelector(`#cat-${kid}`);
+      const btn   = document.querySelector(`#btn-${kid}`);
+      const st    = document.querySelector(`#stat-${kid}`);
+
+      const tegangan = (tegEl?.value||'').trim();
+      const petugas  = (petEl?.value||'').trim();
+      const catatan  = (catEl?.value||'').trim();
+
+      if(!tegangan){ alert('Isi tegangan dahulu.'); tegEl?.focus(); return; }
+      btn.disabled = true; if(st) st.textContent='Menyimpan...';
+
+      try{
+        const res = await fetch(TEGANGAN_API.endpoint, {
+          method:'POST',
+          headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+          body: toFormBody({
+            idpel: idpel,
+            tegangan: tegangan,
+            petugas: petugas,
+            catatan: catatan,
+            api_key: TEGANGAN_API.apiKey
+          })
+        });
+        const data = await res.json().catch(()=>({ok:false,error:'invalid_json'}));
+        if(data.ok){ if(st) { st.textContent='Tersimpan ✓'; st.className='mini ok'; } }
+        else{ if(st){ st.textContent='Gagal simpan'; st.className='mini err'; } alert('Gagal simpan: '+(data.error||'unknown')); }
+      }catch(err){
+        if(st){ st.textContent='Gagal simpan'; st.className='mini err'; }
+        alert('Error jaringan: '+err);
+      }finally{
+        btn.disabled = false;
+      }
+    }
+    window.submitTegangan = submitTegangan; // expose untuk onclick
+
+    /* =========================
+       BOOT
+    ========================== */
+    document.addEventListener('DOMContentLoaded', async ()=>{
+      // last update
+      const last = localStorage.getItem(LAST_KEY);
+      $('#lastUpdate').textContent = last ? fmtDT(Number(last)) : '-';
+
+      $('#go').addEventListener('click', doSearch);
+      $('#q').addEventListener('keypress', e=>{ if(e.key==='Enter') doSearch(); });
+      $('#refreshBtn').addEventListener('click', async ()=>{
+        $('#refreshBtn').disabled = true;
+        DATA = await loadAll();
+        setLastUpdate(Date.now());
+        $('#refreshBtn').disabled = false;
+        alert('Database lokal diperbarui. Silakan lakukan pencarian.');
+      });
+
+      // muat data pertama kali (cache-bust)
+      DATA = await loadAll();
+      if(!last) setLastUpdate(Date.now());
     });
-  }
-}
-
-/* ========= Events ========= */
-document.getElementById('go').addEventListener('click', ()=>{
-  search(document.getElementById('q').value);
-});
-document.getElementById('q').addEventListener('keypress', (e)=>{
-  if (e.key==='Enter') search(e.target.value);
-});
-document.getElementById('btnRefresh').addEventListener('click', async ()=>{
-  await loadAll();
-  renderWarn('Database telah diperbarui. Silakan lakukan pencarian.');
-});
-
-/* init */
-loadAll().then(()=>renderWarn('Silakan ketik kata kunci lalu tekan Enter / klik Cari.'));
-</script>
+  </script>
 </body>
 </html>
