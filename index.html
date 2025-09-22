@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>VKRN ULP Wonosobo</title>
   <style>
-    :root { --pri:#3498db; --bg:#f5f6fa; }
+    :root{--pri:#3498db;--bg:#f5f6fa}
     *{box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
     body{margin:0;background:var(--bg)}
     .wrap{max-width:1100px;margin:auto;padding:28px}
@@ -49,19 +49,25 @@
   </div>
 
 <script>
-/* ---------- UTIL ---------- */
-// Parser CSV robust: dukung ; , atau \t + quotes
+/* ========= Helpers ========= */
+const clean = s => (s ?? '').toString().replace(/\uFEFF/g,'').trim(); // trim + hapus BOM
+const digitsOnly = s => clean(s).replace(/[^\d]/g,'');                 // ambil angka saja
+
+function normalizeKey(k){
+  // samakan nama header (hapus spasi ganda & titik, uppercase)
+  return clean(k).replace(/\s+/g,' ').replace(/\./g,'').toUpperCase();
+}
+
+// Parser CSV: dukung ; , tab, dan "..."
 function parseCSV(text){
   if (text.charCodeAt(0)===0xFEFF) text=text.slice(1);
   const firstLine=(text.split(/\r?\n/)[0]||'');
-  let delim=';';
-  const score = {
+  const scores={
     ';': (firstLine.match(/;/g)||[]).length,
     ',': (firstLine.match(/,/g)||[]).length,
     '\t': (firstLine.match(/\t/g)||[]).length
   };
-  // pilih delimiter terbanyak; default ; agar file sanxing aman
-  delim = Object.entries(score).sort((a,b)=>b[1]-a[1])[0][0];
+  const delim = Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0];
 
   const rows=[]; let row=[], field='', inQuotes=false;
   for (let i=0;i<text.length;i++){
@@ -73,97 +79,100 @@ function parseCSV(text){
       } else { field+=c; }
     } else {
       if (c==='"'){ inQuotes=true; }
-      else if (c===delim){ row.push(field.trim()); field=''; }
-      else if (c==='\n'){ row.push(field.trim()); if(row.some(v=>v!=='')) rows.push(row); row=[]; field=''; }
+      else if (c===delim){ row.push(clean(field)); field=''; }
+      else if (c==='\n'){ row.push(clean(field)); if(row.some(v=>v!=='')) rows.push(row); row=[]; field=''; }
       else if (c!=='\r'){ field+=c; }
     }
   }
-  if (field.length||row.length){ row.push(field.trim()); if(row.some(v=>v!=='')) rows.push(row); }
-
-  return {rows, delim};
+  if (field.length||row.length){ row.push(clean(field)); if(row.some(v=>v!=='')) rows.push(row); }
+  return rows;
 }
 
-const clean = s => (s??'').toString().trim();
-
-function makeMapsLink(obj){
-  // 1) kalau ada kolom yang sudah url maps
-  for (const [k,v] of Object.entries(obj)){
-    const sv = clean(v);
-    if (/https?:\/\/(www\.)?google\.[^/]+\/maps\?q=/i.test(sv)) return sv;
+function mapsLinkFromRow(obj){
+  // url maps langsung?
+  for (const v of Object.values(obj)){
+    const s = clean(v);
+    if (/https?:\/\/(www\.)?google\.[^/]+\/maps\?q=/i.test(s)) return s;
   }
-  // 2) KOORDINAT_X / KOORDINAT_Y
-  const kxKey = Object.keys(obj).find(k=>k.toUpperCase().includes('KOORDINAT_X'));
-  const kyKey = Object.keys(obj).find(k=>k.toUpperCase().includes('KOORDINAT_Y'));
-  if (kxKey && kyKey){
-    let x = clean(obj[kxKey]), y = clean(obj[kyKey]);
-    // perbaiki bentuk "-7 204426" -> "-7.204426"
-    if (x && !x.includes('.') && x.includes(' ')) x = x.replace(/\s+/g,'.');
-    if (y && !y.includes('.') && y.includes(' ')) y = y.replace(/\s+/g,'.');
-    if (x && y && !isNaN(Number(x)) && !isNaN(Number(y))){
-      return `https://www.google.com/maps?q=${x},${y}`;
-    }
+  // KOORDINAT_X / KOORDINAT_Y
+  const kx = Object.keys(obj).find(k=>k.includes('KOORDINAT_X'));
+  const ky = Object.keys(obj).find(k=>k.includes('KOORDINAT_Y'));
+  if (kx && ky){
+    let x = clean(obj[kx]), y = clean(obj[ky]);
+    // betulkan " -7 204426 " => " -7.204426 "
+    if (/^-?\d+\s+\d+$/.test(x)) x = x.replace(/\s+/,'.');
+    if (/^-?\d+\s+\d+$/.test(y)) y = y.replace(/\s+/,'.');
+    if (!isNaN(Number(x)) && !isNaN(Number(y))) return `https://www.google.com/maps?q=${x},${y}`;
   }
   return '';
 }
 
-/* ---------- DATA LOADER ---------- */
+/* ========= Loaders ========= */
 let DATA=[];
 
-async function loadOne(file){
+async function loadCSVFile(filename){
   try{
-    const resp = await fetch(`${file}?t=${Date.now()}`);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const txt = await resp.text();
-    const {rows} = parseCSV(txt);
+    const res = await fetch(`${filename}?t=${Date.now()}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const rows = parseCSV(text);
     if (!rows.length) return [];
-    const headers = rows[0].map(h=>clean(h));
+
+    // header → key normalized
+    const rawHeaders = rows[0];
+    const headers = rawHeaders.map(h=>normalizeKey(h));
+
     const out=[];
     for (let i=1;i<rows.length;i++){
-      const r=rows[i];
+      const r = rows[i];
       if (!r || !r.length) continue;
       const obj={};
       for (let j=0;j<headers.length;j++){
         const key = headers[j] || `COL_${j+1}`;
         obj[key] = clean(r[j]);
       }
-      // buang baris kosong total
-      if (!Object.values(obj).every(v => v==='')) out.push(obj);
+      // duplikasi kolom canon:
+      if (obj['IDPEL']) obj['IDPEL_CANON'] = digitsOnly(obj['IDPEL']);
+      // nomor meter (KRN: NOMOR_METER_LAMA, Sanxing: NOMOR_METER_KWH)
+      const meterKey = ['NOMOR_METER_LAMA','NOMOR_METER_KWH','NOMOR METER LAMA','NOMOR METER KWH']
+        .map(k=>normalizeKey(k)).find(k=>k in obj);
+      if (meterKey) obj['METER_CANON'] = digitsOnly(obj[meterKey]);
+
+      out.push(obj);
     }
+    console.log(`Loaded ${out.length} from ${filename}`);
     return out;
   }catch(e){
-    console.warn('Gagal load', file, e);
+    console.warn('Load error', filename, e);
     return [];
   }
 }
 
 async function loadAll(){
   DATA = [];
-  // 1) dataset KRN (koma)
-  DATA.push(...await loadOne('vkrn.csv'));
-  // 2) dataset Sanxing: coba nama normal dan fallback "csv.csv"
-  let san = await loadOne('vkrn_sanxing.csv');
-  if (!san.length) san = await loadOne('vkrn_sanxing.csv.csv');
+  // KRN
+  DATA.push(...await loadCSVFile('vkrn.csv'));
+  // SANXING (nama normal atau fallback .csv.csv)
+  let san = await loadCSVFile('vkrn_sanxing.csv');
+  if (!san.length) san = await loadCSVFile('vkrn_sanxing.csv.csv');
   DATA.push(...san);
 
   document.getElementById('lastUpdate').textContent =
     new Date().toLocaleString('id-ID');
-
-  console.log('Total records:', DATA.length);
+  console.log('TOTAL rows:', DATA.length);
 }
 
-/* ---------- SEARCH & RENDER ---------- */
+/* ========= Search & Render ========= */
 function search(q){
   q = clean(q);
-  if (!q){ renderWarn('Silakan masukkan kata kunci.'); return; }
+  if (!q){ return renderWarn('Silakan masukkan kata kunci.'); }
 
-  const isNumeric = /^\d+$/.test(q);
-  let results = [];
-
-  if (isNumeric){
-    // exact match untuk angka (IDPEL/No Meter)
-    const needle = q;
+  let results=[];
+  if (/^\d+$/.test(q)){
+    const nd = digitsOnly(q);
     results = DATA.filter(row =>
-      Object.values(row).some(v => clean(v) === needle)
+      row.IDPEL_CANON === nd || row.METER_CANON === nd ||
+      Object.values(row).some(v => digitsOnly(v).length>0 && digitsOnly(v)===nd)
     );
   } else {
     const nlc = q.toLowerCase();
@@ -171,8 +180,7 @@ function search(q){
       Object.values(row).some(v => clean(v).toLowerCase().includes(nlc))
     );
   }
-
-  render(results, q);
+  render(results);
 }
 
 function renderWarn(msg){
@@ -180,21 +188,17 @@ function renderWarn(msg){
     `<div class="warn">${msg}</div>`;
 }
 
-function render(rows, q){
+function render(rows){
   const out = document.getElementById('out');
-  if (!rows.length){
-    renderWarn('Tidak ditemukan data yang sesuai');
-    return;
-  }
+  if (!rows.length) return renderWarn('Tidak ditemukan data yang sesuai');
+
   let html = `<div class="count">📊 Ditemukan ${rows.length} data:</div>`;
   rows.forEach(row=>{
-    const keys = Object.keys(row);
-    // cari field IDPEL
-    const idpelKey = keys.find(k=>k.toUpperCase()==='IDPEL');
-    const idpelVal = idpelKey ? clean(row[idpelKey]) : '';
+    const keys = Object.keys(row).filter(k => !k.endsWith('_CANON')); // sembunyikan kolom canon
+    const idpel = row['IDPEL'] || '';
 
     html += `<div class="card">`;
-    if (idpelVal) html += `<div class="idpel">IDPEL: ${idpelVal}</div>`;
+    if (idpel) html += `<div class="idpel">IDPEL: ${clean(idpel)}</div>`;
 
     html += `<div class="kv">`;
     keys.forEach(k=>{
@@ -207,18 +211,17 @@ function render(rows, q){
       }
     });
 
-    // tambahkan link peta jika memungkinkan
-    const maps = makeMapsLink(row);
+    const maps = mapsLinkFromRow(row);
     if (maps){
       html += `<div><b>PETA</b></div><div><a href="${maps}" target="_blank" rel="noopener">Lihat di Google Maps</a></div>`;
     }
-
     html += `</div></div>`;
   });
+
   out.innerHTML = html;
 }
 
-/* ---------- EVENTS ---------- */
+/* ========= Events ========= */
 document.getElementById('go').addEventListener('click', ()=>{
   search(document.getElementById('q').value);
 });
@@ -230,7 +233,7 @@ document.getElementById('btnRefresh').addEventListener('click', async ()=>{
   renderWarn('Database telah diperbarui. Silakan lakukan pencarian.');
 });
 
-/* initial */
+/* init */
 loadAll().then(()=>renderWarn('Silakan ketik kata kunci lalu tekan Enter / klik Cari.'));
 </script>
 </body>
