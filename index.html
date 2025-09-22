@@ -277,7 +277,7 @@ function resultCard(item){
           <select id="f-petugas">
             ${[petugasDefault,'FARIS','INGGIT','TES'].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).map(v=>`<option ${v===petugasDefault?'selected':''}>${v}</option>`).join('')}
           </select>
-          <input id="f-catatan" placeholder="Catatan (opsional)"/>
+          <input id="f-catatan" placeholder="NOMOR HP PELANGGAN"/>
           <button class="btn success" id="btnSimpan">Simpan</button>
         </div>
         <div class="status" id="saveStatus"></div>
