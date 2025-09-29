@@ -75,34 +75,27 @@
 =========================== */
 const TEGANGAN_API = {
   endpoint: 'https://script.google.com/macros/s/AKfycbyUgQItIIfQeNbvndLCNg6qCedq54K5PrO35JlQhUSrbEmymrtTyt9B_oH-05kmXCVT/exec',
-  api_key: 'VKRN_SECRET'   // samakan dengan API_KEY di Apps Script
+  api_key: 'VKRN_SECRET'
 };
-// nama file CSV (sesuaikan dengan repo kamu)
-const FILE_KRN      = 'vkrn.csv';          // existing KRN
-const FILE_SANXING  = 'vkrn_sanxing.csv';  // SANXING (pakai delimiter ';')
+const FILE_KRN      = 'vkrn.csv';
+const FILE_SANXING  = 'vkrn_sanxing.csv';
 
 /* ===========================
    UTIL
 =========================== */
 const $ = sel => document.querySelector(sel);
-
-function fmtTime(ts=Date.now()){
-  return new Date(ts).toLocaleString('id-ID',{dateStyle:'short', timeStyle:'medium'});
-}
+const fmtTime = (ts=Date.now()) => new Date(ts).toLocaleString('id-ID',{dateStyle:'short', timeStyle:'medium'});
 
 function autoDelimiter(firstLine){
-  // pilih delimiter yg paling banyak muncul pada baris header
   const c = firstLine;
-  const scores = [
+  return [
     [',', (c.match(/,/g)||[]).length],
     [';', (c.match(/;/g)||[]).length],
     ['\t',(c.match(/\t/g)||[]).length],
-  ].sort((a,b)=>b[1]-a[1]);
-  return scores[0][0] || ',';
+  ].sort((a,b)=>b[1]-a[1])[0][0] || ',';
 }
 
 function parseCSV(text){
-  // strip BOM
   if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
   const first = text.split(/\r?\n/)[0] || '';
   const delim = autoDelimiter(first);
@@ -113,8 +106,7 @@ function parseCSV(text){
     const ch = text[i];
     if (q){
       if (ch === '"'){
-        if (text[i+1] === '"'){ field+='"'; i++; }
-        else q=false;
+        if (text[i+1] === '"'){ field+='"'; i++; } else q=false;
       } else field += ch;
     } else {
       if (ch === '"'){ q=true; }
@@ -141,12 +133,10 @@ function parseCSV(text){
   return data;
 }
 
-function htmlEscape(s){ return (s??'').toString().replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
-
 /* ===========================
    DATASTORE
 =========================== */
-let DB = [];   // gabungan KRN + SANXING
+let DB = [];
 let lastUpdate = null;
 
 async function loadCSV(url){
@@ -160,43 +150,64 @@ async function loadAll(){
   const [krn, san] = await Promise.allSettled([ loadCSV(FILE_KRN), loadCSV(FILE_SANXING) ]);
   const a = krn.status==='fulfilled' ? krn.value : [];
   const b = san.status==='fulfilled' ? san.value : [];
-  // Normalisasi beberapa alias kolom agar bisa tampil seragam
-  const norm = (row)=>{
-    const map = new Map(Object.entries(row));
 
-    function pick(...names){ for(const n of names){ if(map.has(n)) return map.get(n); } return ''; }
+  const norm = (row)=>{
+    const M = new Map(Object.entries(row));
+    const get = (...names)=>{ for(const n of names){ if(M.has(n)) return (M.get(n)||'').toString().trim(); } return ''; };
+
+    // koordinat & peta
+    const xRaw = get('KOORDINAT_X','LAT');
+    const yRaw = get('KOORDINAT_Y','LON');
+    const kx = xRaw.replace(',', '.').replace(/\s+/g,'');
+    const ky = yRaw.replace(',', '.').replace(/\s+/g,'');
+    const hasXY = kx && ky && !isNaN(Number(kx)) && !isNaN(Number(ky));
+
+    const linkMapsCol = get('LINK MAPS','LINK_MAPS');
+    const anyUrl = (()=>{ for (const v of M.values()){ const s=(v||'')+''; if (/^https?:\/\//i.test(s)) return s; } return ''; })();
+    const petaLink = linkMapsCol || (hasXY ? `https://www.google.com/maps?q=${kx},${ky}` : get('PETA','MAP','Maps','KD_KEL3','KD_KEL') || anyUrl);
 
     return {
+      // kolom baru di depan
+      HISTORY_TOKEN:       get('HISTORY TOKEN','HISTORY_TOKEN'),
+      P2TL:                get('P2TL'),
+      CEK_AKT:             get('CEK AKT','CEK_AKT'),
+      TERAKHIR_BELI_TOKEN: get('TERAKHIR BELI TOKEN'),
+      TGL_TERAKHIR_TOKEN:  get('TGL TERAKHIR TOKEN','TGL_TERAKHIR_TOKEN'),
+
       // umum
-      IDPEL:          pick('IDPEL','Idpel','idpel'),
-      JENIS:          pick('JENIS','Jenis'),
-      NAMA:           pick('NAMA','Nama'),
-      NAMAPNJ:        pick('NAMAPNJ'),
-      NAMA_KELURAHAN: pick('NAMA_KELURAHAN','DESA','Desa'),
-      NAMA_KECAMATAN: pick('NAMA_KECAMATAN','KECAMATAN','Kecamatan'),
-      PETUGAS:        pick('PETUGAS'),
-      UTAMA:          pick('UTAMA'),
-      RT:             pick('RT'),
-      RW:             pick('RW'),
-      NOMOR_METER_KWH:pick('NOMOR_METER_KWH','NOMOR_METER_LAMA','NOMOR_METER_BARU','NO_METER','No Meter'),
-      TARIF:          pick('TARIF'),
-      DAYA:           pick('DAYA'),
-      MERK_METER_KWH: pick('MERK_METER_KWH'),
-      TYPE_METER_KWH: pick('TYPE_METER_KWH'),
-      NOMOR_JURUSAN_TIANG: pick('NOMOR_JURUSAN_TIANG'),
-      KOORDINAT_X:    pick('KOORDINAT_X','LAT'),
-      KOORDINAT_Y:    pick('KOORDINAT_Y','LON'),
-      KD_KEL:         pick('KD_KEL'),
-      PETA:           pick('PETA','Maps','MAP'),
-      // atribut KRN lama
-      ALAMAT:         pick('ALAMAT'),
-      TARIF_INDEX:    pick('TARIF_INDEX'),
-      UNITUP:         pick('UNITUP'),
-      VKRN_LAMA:      pick('VKRN_LAMA'),
-      AGENDA:         pick('AGENDA'),
-      TGLAKTIVASI:    pick('TGLAKTIVASI','TGL AKTIVASI'),
-      STATUS:         pick('STATUS'),
-      TGLCATAT:       pick('TGLCATAT'),
+      IDPEL:               get('IDPEL','Idpel','idpel'),
+      JENIS:               get('JENIS','Jenis'),
+      NAMA:                get('NAMA','Nama'),
+      NAMAPNJ:             get('NAMAPNJ'),
+      NAMA_KELURAHAN:      get('NAMA_KELURAHAN','DESA','Desa'),
+      NAMA_KECAMATAN:      get('NAMA_KECAMATAN','KECAMATAN','Kecamatan'),
+      PETUGAS:             get('PETUGAS'),
+      UTAMA:               get('UTAMA'),
+      RT:                  get('RT'),
+      RW:                  get('RW'),
+      NOMOR_METER_KWH:     get('NOMOR_METER_KWH','NOMOR_METER_LAMA','NOMOR_METER_BARU','NO_METER','No Meter'),
+      TARIF:               get('TARIF'),
+      DAYA:                get('DAYA'),
+      MERK_METER_KWH:      get('MERK_METER_KWH'),
+      TYPE_METER_KWH:      get('TYPE_METER_KWH'),
+      NOMOR_JURUSAN_TIANG: get('NOMOR_JURUSAN_TIANG'),
+
+      // koordinat & peta
+      KOORDINAT_X:         hasXY ? kx : '',
+      KOORDINAT_Y:         hasXY ? ky : '',
+      PETA:                petaLink,
+
+      // tambahan opsional lama
+      KD_KEL:              get('KD_KEL'),
+      KD_KEL3:             get('KD_KEL3'),
+      ALAMAT:              get('ALAMAT'),
+      TARIF_INDEX:         get('TARIF_INDEX'),
+      UNITUP:              get('UNITUP'),
+      VKRN_LAMA:           get('VKRN_LAMA'),
+      AGENDA:              get('AGENDA'),
+      TGLAKTIVASI:         get('TGLAKTIVASI','TGL AKTIVASI'),
+      STATUS:              get('STATUS'),
+      TGLCATAT:            get('TGLCATAT'),
     };
   };
 
@@ -208,6 +219,7 @@ async function loadAll(){
 /* ===========================
    RENDER
 =========================== */
+function htmlEscape(s){ return (s??'').toString().replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
 function mkRow(key,val){
   const v = (val??'')+''; 
   const isURL = /^https?:\/\//i.test(v);
@@ -220,16 +232,22 @@ function mkRow(key,val){
 }
 
 function resultCard(item){
-  // Maps link dari koordinat
-  let maps = '';
-  const x = (item.KOORDINAT_X||'').replace(',', '.').replace(/\s+/g,'');
-  const y = (item.KOORDINAT_Y||'').replace(',', '.').replace(/\s+/g,'');
-  if (x && y && !isNaN(Number(x)) && !isNaN(Number(y))){
-    maps = `https://www.google.com/maps?q=${x},${y}`;
+  // fallback link peta kalau masih kosong
+  let petaLink = item.PETA || '';
+  if (!petaLink && item.KOORDINAT_X && item.KOORDINAT_Y){
+    petaLink = `https://www.google.com/maps?q=${item.KOORDINAT_X},${item.KOORDINAT_Y}`;
   }
 
   const hdr = `IDPEL: ${htmlEscape(item.IDPEL||'-')}`;
   const rows = [
+    // kolom baru di depan
+    ['HISTORY_TOKEN', item.HISTORY_TOKEN],
+    ['P2TL', item.P2TL],
+    ['CEK_AKT', item.CEK_AKT],
+    ['TERAKHIR_BELI_TOKEN', item.TERAKHIR_BELI_TOKEN],
+    ['TGL_TERAKHIR_TOKEN', item.TGL_TERAKHIR_TOKEN],
+
+    // identitas
     ['IDPEL', item.IDPEL],
     ['JENIS', item.JENIS],
     ['NAMA', item.NAMA],
@@ -240,17 +258,23 @@ function resultCard(item){
     ['UTAMA', item.UTAMA],
     ['RT', item.RT],
     ['RW', item.RW],
+
+    // teknis kWh
     ['NOMOR_METER_KWH', item.NOMOR_METER_KWH],
     ['TARIF', item.TARIF],
     ['DAYA', item.DAYA],
     ['MERK_METER_KWH', item.MERK_METER_KWH],
     ['TYPE_METER_KWH', item.TYPE_METER_KWH],
     ['NOMOR_JURUSAN_TIANG', item.NOMOR_JURUSAN_TIANG],
+
+    // koordinat & peta
     ['KOORDINAT_X', item.KOORDINAT_X],
     ['KOORDINAT_Y', item.KOORDINAT_Y],
+    ['PETA', petaLink],
+
+    // tambahan opsional lama
     ['KD_KEL', item.KD_KEL],
-    ['PETA', maps || item.PETA || ''],
-    // beberapa kolom lama (kalau ada)
+    ['KD_KEL3', item.KD_KEL3],
     ['ALAMAT', item.ALAMAT],
     ['TARIF_INDEX', item.TARIF_INDEX],
     ['UNITUP', item.UNITUP],
@@ -261,7 +285,6 @@ function resultCard(item){
     ['TGLCATAT', item.TGLCATAT],
   ].filter(([k,v]) => (v??'')!=='' );
 
-  // Opsi petugas default
   const petugasDefault = item.PETUGAS || '';
 
   return `
@@ -293,15 +316,9 @@ function resultCard(item){
 function search(q){
   q = (q||'').trim().toLowerCase();
   if (!q) return [];
-
-  // Prioritas: IDPEL exact match
   const exact = DB.filter(r => (r.IDPEL||'').toString().trim()===q);
   if (exact.length) return exact;
-
-  // otherwise: contains di semua kolom
-  return DB.filter(row=>{
-    return Object.values(row).some(v => (v||'').toString().toLowerCase().includes(q));
-  });
+  return DB.filter(row=> Object.values(row).some(v => (v||'').toString().toLowerCase().includes(q)));
 }
 
 /* ===========================
@@ -366,7 +383,6 @@ function showResults(list){
     area.innerHTML = `<div class="hint" style="background:#fff;border:1px solid var(--line);padding:14px;border-radius:10px;">Tidak ditemukan data yang sesuai</div>`;
     return;
   }
-  // tampilkan hanya item pertama (paling relevan) untuk fokus
   const item = list[0];
   area.innerHTML = resultCard(item);
   wireCardActions(item.IDPEL);
