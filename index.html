@@ -1,405 +1,484 @@
-
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>VKRN ULP Wonosobo</title>
-
-<style>
-  :root{
-    --bg:#f5f7fb; --card:#fff; --text:#2c3e50; --muted:#6b7b8c;
-    --accent:#4e79ff; --accent-2:#27ae60; --danger:#e74c3c;
-    --line:#e8eef6;
-  }
-  *{box-sizing:border-box;font-family:Inter,Segoe UI,system-ui,Arial,sans-serif}
-  body{margin:0;background:var(--bg);color:var(--text)}
-  .wrap{max-width:980px;margin:30px auto;padding:0 16px}
-  h1{font-weight:800;letter-spacing:.3px;text-align:center;margin:6px 0 4px}
-  .sub{color:var(--muted);text-align:center;font-size:13px;margin-bottom:14px}
-  .toolbar{display:flex;gap:8px;justify-content:center;align-items:center;margin:10px 0 18px}
-  .btn{border:0;background:var(--accent);color:#fff;border-radius:8px;padding:10px 14px;cursor:pointer;font-weight:600}
-  .btn.small{padding:8px 12px;font-size:13px}
-  .btn.success{background:var(--accent-2)}
-  .btn:disabled{opacity:.6;cursor:not-allowed}
-  .search{display:flex;gap:8px;justify-content:center}
-  .search input{width:100%;max-width:720px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:12px 14px;font-size:15px;outline:none}
-  .search .btn{padding:12px 18px}
-  .hint{color:var(--muted);font-size:13px;margin:10px 0}
-  .grid{margin-top:12px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 4px 14px rgba(30,60,90,.05);overflow:hidden}
-  .card .hdr{background:#eef3ff;border-bottom:1px solid var(--line);padding:10px 14px;font-weight:800}
-  .rows{padding:10px 14px}
-  .row{display:grid;grid-template-columns:210px 1fr;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line)}
-  .row:last-child{border-bottom:0}
-  .key{color:var(--muted);font-weight:600}
-  .val a{color:var(--accent);text-decoration:none}
-  .form{margin-top:12px;border-top:1px solid var(--line);padding:12px 14px;background:#fcfdff}
-  .form h3{margin:4px 0 10px;font-size:15px}
-  .form .fgrid{display:grid;grid-template-columns:160px 220px 1fr auto;gap:8px}
-  .form input,.form select{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
-  .status{font-size:13px;margin-left:10px}
-  .ok{color:var(--accent-2)} .err{color:var(--danger)}
-  footer{color:var(--muted);text-align:center;margin:36px 0 16px;font-size:13px}
-  .badge{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;font-size:12px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vkrn sanxing</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: justify-content;
+            justify-content: center;
+            padding: 5px;
+        }
+        .container { width: 100%; max-width: 600px; transition: all 0.3s ease; }
+        .search-page { text-align: center; }
+        .logo {
+            font-size: 2.5em; color: white; margin-bottom: 20px; font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .cache-indicator {
+            position: fixed; top: 10px; right: 10px; background: #10b981; color: white;
+            padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: 600;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); animation: fadeIn 0.3s ease; z-index: 1000;
+        }
+        .floating-wa-btn {
+            position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #25D366;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); cursor: pointer; transition: all 0.3s ease; z-index: 999; border: none;
+        }
+        .floating-wa-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(37, 211, 102, 0.6); }
+        .floating-wa-btn svg { width: 35px; height: 35px; fill: white; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .search-box {
+            background: white; border-radius: 20px; padding: 10px 20px; display: flex; align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); transition: all 0.3s ease;
+        }
+        .search-box:hover { box-shadow: 0 15px 40px rgba(0,0,0,0.3); transform: translateY(-2px); }
+        .search-box input { flex: 1; border: none; outline: none; font-size: 16px; padding: 10px; background: transparent; }
+        .search-box button {
+            background: #2563eb; border: none; color: white; padding: 6px 30px; border-radius: 15px; cursor: pointer;
+            font-size: 16px; font-weight: 600; transition: all 0.3s ease;
+        }
+        .search-box button:hover { background: #1d4ed8; transform: scale(1.05); }
+        .results-page { display: none; }
+        .results-container {
+            background: white; border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            height: 83vh; overflow-y: auto; margin-bottom: 15px;
+        }
+        .result-item { background: white; border: 2px solid #e2e8f0; border-radius: 15px; padding: 0; margin-bottom: 15px; overflow: hidden; transition: all 0.3s ease; }
+        .result-item:hover { border-color: #2563eb; box-shadow: 0 5px 15px rgba(37,99,235,0.2); transform: translateX(5px); }
+        .result-table { width: 100%; border-collapse: collapse; }
+        .result-row { display: grid; grid-template-columns: 55% 45%; border-bottom: 1px solid #e2e8f0; }
+        .result-row:last-child { border-bottom: none; }
+        .result-label { font-weight: 600; color: #1e293b; background: #f8fafc; padding: 12px 15px; border-right: 2px solid #e2e8f0; }
+        .result-value { color: #475569; padding: 12px 15px; word-wrap: break-word; }
+        .button-group { display: flex; gap: 10px; justify-content: center; }
+        .btn {
+            flex: 1; padding: 15px 30px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s ease; max-width: 200px;
+        }
+        .btn-back { background: #f3cb51; color: white; }
+        .btn-back:hover { background: #0f172a; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .btn-pdf { background: #00A2B9; color: white; }
+        .btn-pdf:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(37,99,235,0.3); }
+        .loading, .no-results { text-align: center; padding: 40px; color: #64748b; }
+        .no-results { font-size: 18px; }
+        @media (max-width: 768px) {
+            .logo { font-size: 2em; }
+            .result-row { grid-template-columns: 55% 45%; font-size: 14px; }
+            .results-container { padding: 15px; }
+            .btn { padding: 12px 20px; font-size: 14px; }
+        }
+        @media (max-width: 480px) {
+            .logo { font-size: 1.5em; }
+            .search-box input { font-size: 20px; padding: 2px; }
+            .search-box button { padding: 10px 20px; font-size: 20px; }
+            .result-row { grid-template-columns: 55% 45%; font-size: 14px; }
+            .result-label, .result-value { padding: 10px 14px; }
+            .btn { padding: 12px 15px; font-size: 16px; }
+            .floating-wa-btn { width: 50px; height: 50px; bottom: 100px; right: 5px; }
+            .floating-wa-btn svg { width: 28px; height: 28px; }
+        }
+        /* Custom Scrollbar */
+        .results-container::-webkit-scrollbar { width: 8px; }
+        .results-container::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .results-container::-webkit-scrollbar-thumb { background: #2563eb; border-radius: 10px; }
+        .results-container::-webkit-scrollbar-thumb:hover { background: #1d4ed8; }
+    </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>VKRN ULP Wonosobo</h1>
-
-  <div class="sub">
-    <span id="lastUpdate">Database terakhir diupdate: -</span>
-  </div>
-
-  <div class="toolbar">
-    <button id="btnRefresh" class="btn small">🔄 Refresh Database</button>
-  </div>
-
-  <div class="search">
-    <input id="q" placeholder="Cari IDPEL / nama pelanggan / alamat / nomor meter ..." />
-    <button class="btn" id="btnCari">Cari</button>
-  </div>
-
-  <div class="hint" id="hint">Ketik lalu Enter / klik Cari. Pencarian menyatukan data KRN & SANXING.</div>
-
-  <div class="grid" id="resultArea"></div>
-
-  <footer>
-    <div class="badge">@TELWBO • AHLINe PAK DAYAT</div>
-  </footer>
-</div>
-
-<script>
-/* ===========================
-   KONFIGURASI
-=========================== */
-const TEGANGAN_API = {
-  endpoint: 'https://script.google.com/macros/s/AKfycbyUgQItIIfQeNbvndLCNg6qCedq54K5PrO35JlQhUSrbEmymrtTyt9B_oH-05kmXCVT/exec',
-  api_key: 'VKRN_SECRET'   // samakan dengan API_KEY di Apps Script
-};
-// nama file CSV (sesuaikan dengan repo kamu)
-const FILE_KRN      = 'vkrn.csv';          // existing KRN
-const FILE_SANXING  = 'vkrn_sanxing.csv';  // SANXING (pakai delimiter ';')
-
-/* ===========================
-   UTIL
-=========================== */
-const $ = sel => document.querySelector(sel);
-
-function fmtTime(ts=Date.now()){
-  return new Date(ts).toLocaleString('id-ID',{dateStyle:'short', timeStyle:'medium'});
-}
-
-function autoDelimiter(firstLine){
-  // pilih delimiter yg paling banyak muncul pada baris header
-  const c = firstLine;
-  const scores = [
-    [',', (c.match(/,/g)||[]).length],
-    [';', (c.match(/;/g)||[]).length],
-    ['\t',(c.match(/\t/g)||[]).length],
-  ].sort((a,b)=>b[1]-a[1]);
-  return scores[0][0] || ',';
-}
-
-function parseCSV(text){
-  // strip BOM
-  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-  const first = text.split(/\r?\n/)[0] || '';
-  const delim = autoDelimiter(first);
-
-  const rows = [];
-  let row=[], field='', q=false;
-  for (let i=0;i<text.length;i++){
-    const ch = text[i];
-    if (q){
-      if (ch === '"'){
-        if (text[i+1] === '"'){ field+='"'; i++; }
-        else q=false;
-      } else field += ch;
-    } else {
-      if (ch === '"'){ q=true; }
-      else if (ch === delim){ row.push(field.trim()); field=''; }
-      else if (ch === '\n'){ row.push(field.trim()); if(row.some(v=>v!=='')) rows.push(row); row=[]; field=''; }
-      else if (ch === '\r'){ /*skip*/ }
-      else field += ch;
-    }
-  }
-  if (field.length || row.length){ row.push(field.trim()); if(row.some(v=>v!=='')) rows.push(row); }
-
-  const headers = (rows[0]||[]).map(h=>h.trim());
-  const data=[];
-  for (let r=1;r<rows.length;r++){
-    const line=rows[r]; if(!line) continue;
-    const obj={};
-    for(let j=0;j<headers.length;j++){
-      const key = headers[j] || ('COL_'+(j+1));
-      obj[key]= (line[j]??'').toString().trim();
-    }
-    const empty = Object.values(obj).every(v=>v==='');
-    if(!empty) data.push(obj);
-  }
-  return data;
-}
-
-function htmlEscape(s){ return (s??'').toString().replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])) }
-
-/* ===========================
-   DATASTORE
-=========================== */
-let DB = [];   // gabungan KRN + SANXING
-let lastUpdate = null;
-
-async function loadCSV(url){
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Gagal memuat '+url);
-  const txt = await res.text();
-  return parseCSV(txt);
-}
-
-async function loadAll(){
-  const [krn, san] = await Promise.allSettled([ loadCSV(FILE_KRN), loadCSV(FILE_SANXING) ]);
-  const a = krn.status==='fulfilled' ? krn.value : [];
-  const b = san.status==='fulfilled' ? san.value : [];
-  // Normalisasi beberapa alias kolom agar bisa tampil seragam
-  const norm = (row)=>{
-    const map = new Map(Object.entries(row));
-
-    function pick(...names){ for(const n of names){ if(map.has(n)) return map.get(n); } return ''; }
-
-    return {
-      // umum
-      IDPEL:          pick('IDPEL','Idpel','idpel'),
-      JENIS:          pick('JENIS','Jenis'),
-      NAMA:           pick('NAMA','Nama'),
-      NAMAPNJ:        pick('NAMAPNJ'),
-      NAMA_KELURAHAN: pick('NAMA_KELURAHAN','DESA','Desa'),
-      NAMA_KECAMATAN: pick('NAMA_KECAMATAN','KECAMATAN','Kecamatan'),
-      PETUGAS:        pick('PETUGAS'),
-      UTAMA:          pick('UTAMA'),
-      RT:             pick('RT'),
-      RW:             pick('RW'),
-      NOMOR_METER_KWH:pick('NOMOR_METER_KWH','NOMOR_METER_LAMA','NOMOR_METER_BARU','NO_METER','No Meter'),
-      TARIF:          pick('TARIF'),
-      DAYA:           pick('DAYA'),
-      MERK_METER_KWH: pick('MERK_METER_KWH'),
-      TYPE_METER_KWH: pick('TYPE_METER_KWH'),
-      NOMOR_JURUSAN_TIANG: pick('NOMOR_JURUSAN_TIANG'),
-      KOORDINAT_X:    pick('KOORDINAT_X','LAT'),
-      KOORDINAT_Y:    pick('KOORDINAT_Y','LON'),
-      KD_KEL:         pick('KD_KEL'),
-      PETA:           pick('PETA','Maps','MAP'),
-      // atribut KRN lama
-      ALAMAT:         pick('ALAMAT'),
-      TARIF_INDEX:    pick('TARIF_INDEX'),
-      UNITUP:         pick('UNITUP'),
-      VKRN_LAMA:      pick('VKRN_LAMA'),
-      AGENDA:         pick('AGENDA'),
-      TGLAKTIVASI:    pick('TGLAKTIVASI','TGL AKTIVASI'),
-      STATUS:         pick('STATUS'),
-      TGLCATAT:       pick('TGLCATAT'),
-    };
-  };
-
-  DB = [...a.map(norm), ...b.map(norm)];
-  lastUpdate = Date.now();
-  $('#lastUpdate').textContent = `Database terakhir diupdate: ${fmtTime(lastUpdate)}`;
-}
-
-/* ===========================
-   RENDER
-=========================== */
-function mkRow(key,val){
-  const v = (val??'')+''; 
-  const isURL = /^https?:\/\//i.test(v);
-  return `
-    <div class="row">
-      <div class="key">${htmlEscape(key)}</div>
-      <div class="val">${isURL? `<a target="_blank" rel="noopener" href="${htmlEscape(v)}">Link</a>` : htmlEscape(v)}</div>
-    </div>
-  `;
-}
-
-function resultCard(item){
-  // Maps link dari koordinat
-  let maps = '';
-  const x = (item.KOORDINAT_X||'').replace(',', '.').replace(/\s+/g,'');
-  const y = (item.KOORDINAT_Y||'').replace(',', '.').replace(/\s+/g,'');
-  if (x && y && !isNaN(Number(x)) && !isNaN(Number(y))){
-    maps = `https://www.google.com/maps?q=${x},${y}`;
-  }
-
-  const hdr = `IDPEL: ${htmlEscape(item.IDPEL||'-')}`;
-  const rows = [
-    ['IDPEL', item.IDPEL],
-    ['JENIS', item.JENIS],
-    ['NAMA', item.NAMA],
-    ['NAMAPNJ', item.NAMAPNJ],
-    ['NAMA_KELURAHAN', item.NAMA_KELURAHAN],
-    ['NAMA_KECAMATAN', item.NAMA_KECAMATAN],
-    ['PETUGAS', item.PETUGAS],
-    ['UTAMA', item.UTAMA],
-    ['RT', item.RT],
-    ['RW', item.RW],
-    ['NOMOR_METER_KWH', item.NOMOR_METER_KWH],
-    ['TARIF', item.TARIF],
-    ['DAYA', item.DAYA],
-    ['MERK_METER_KWH', item.MERK_METER_KWH],
-    ['TYPE_METER_KWH', item.TYPE_METER_KWH],
-    ['NOMOR_JURUSAN_TIANG', item.NOMOR_JURUSAN_TIANG],
-    ['KOORDINAT_X', item.KOORDINAT_X],
-    ['KOORDINAT_Y', item.KOORDINAT_Y],
-    ['KD_KEL', item.KD_KEL],
-    ['PETA', maps || item.PETA || ''],
-    // beberapa kolom lama (kalau ada)
-    ['ALAMAT', item.ALAMAT],
-    ['TARIF_INDEX', item.TARIF_INDEX],
-    ['UNITUP', item.UNITUP],
-    ['VKRN_LAMA', item.VKRN_LAMA],
-    ['AGENDA', item.AGENDA],
-    ['TGLAKTIVASI', item.TGLAKTIVASI],
-    ['STATUS', item.STATUS],
-    ['TGLCATAT', item.TGLCATAT],
-  ].filter(([k,v]) => (v??'')!=='' );
-
-  // Opsi petugas default
-  const petugasDefault = item.PETUGAS || '';
-
-  return `
-  <div class="card">
-    <div class="hdr">${hdr}</div>
-    <div class="rows">
-      ${rows.map(([k,v])=>mkRow(k,v)).join('')}
-
-      <div class="form">
-        <h3>DIPASTIKAN SEBELUM MENGGANTI, CEK TEGANGAN, APABILA DIBAWAH 200V, MAKA ISI DIBAWAH INI DAN WA TE</h3>
-        <div class="fgrid">
-          <input id="f-tegangan" type="number" placeholder="Tegangan (Volt)"/>
-          <select id="f-petugas">
-            ${[petugasDefault,'FARIS','INGGIT','TES'].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).map(v=>`<option ${v===petugasDefault?'selected':''}>${v}</option>`).join('')}
-          </select>
-          <input id="f-catatan" placeholder="NOMOR HP PELANGGAN"/>
-          <button class="btn success" id="btnSimpan">Simpan</button>
+    <div class="container">
+        <!-- vkrn sanxing -->
+        <div class="search-page" id="searchPage">
+            <div class="logo"><br>🔍<br><br>VKRN SANXING <br>ULP WONOSOBO<br>  <small style="color: #00A2B9; margin-top: 5px; display: block;">Sistem informasi dan Pelaporan Pemasangan KWH VKRN Sanxing</small></div>
+            <br><br>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Masukkan pencarian..." autofocus>
+                <button onclick="searchData()">Cari</button>
+            </div>
+            <br>
+                <small style="color: #FFFFFF; margin-top: 5px; display: block;">*Saat ini, pdf hanya tersedia untuk wilayah Kejajar</small>
         </div>
-        <div class="status" id="saveStatus"></div>
-      </div>
+
+        <!-- Halaman Hasil -->
+        <div class="results-page" id="resultsPage">
+            <div class="results-container" id="resultsContainer">
+                <div class="loading">Memuat data...</div>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-back" onclick="goBack()">← Kembali</button>
+                <button class="btn btn-pdf" onclick="viewPDF()">📄 Lihat PDF</button>
+            </div>
+
+            <!-- Floating WhatsApp Button -->
+            <button class="floating-wa-btn" onclick="openWhatsAppForm()" title="Kirim ke WhatsApp">
+                <svg viewBox="0 0 32 32">
+                    <path d="M16 0c-8.837 0-16 7.163-16 16 0 2.825 0.737 5.607 2.137 8.048l-2.137 7.952 7.933-2.127c2.42 1.37 5.173 2.127 8.067 2.127 8.837 0 16-7.163 16-16s-7.163-16-16-16zM16 29.467c-2.482 0-4.908-0.646-7.07-1.87l-0.507-0.292-4.713 1.262 1.262-4.669-0.292-0.508c-1.207-2.100-1.847-4.507-1.847-6.957 0-7.51 6.11-13.62 13.62-13.62s13.62 6.11 13.62 13.62-6.11 13.62-13.62 13.62zM21.305 19.26c-0.346-0.174-2.049-1.007-2.366-1.123-0.316-0.117-0.547-0.174-0.776 0.174s-0.892 1.123-1.094 1.347c-0.201 0.231-0.401 0.26-0.747 0.087-0.346-0.174-1.461-0.539-2.785-1.722-1.031-0.922-1.726-2.061-1.927-2.407-0.201-0.346-0.022-0.533 0.152-0.705 0.156-0.155 0.346-0.401 0.518-0.603 0.174-0.201 0.231-0.346 0.346-0.576 0.117-0.231 0.058-0.433-0.028-0.605s-0.776-1.87-1.063-2.565c-0.28-0.672-0.56-0.58-0.776-0.591-0.201-0.008-0.431-0.010-0.661-0.010s-0.603 0.087-0.919 0.433c-0.316 0.346-1.206 1.179-1.206 2.873s1.235 3.333 1.406 3.561c0.174 0.231 2.425 3.732 5.872 5.234 0.821 0.354 1.462 0.566 1.962 0.724 0.825 0.262 1.577 0.225 2.168 0.137 0.661-0.099 2.049-0.837 2.335-1.647 0.288-0.809 0.288-1.504 0.201-1.647-0.086-0.144-0.316-0.231-0.662-0.403z"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Halaman PDF Viewer -->
+        <div class="results-page" id="pdfPage">
+            <div class="results-container" id="pdfContainer">
+                <div id="pdfControls" style="text-align: center; padding: 15px; background: #f8fafc; border-radius: 10px; margin-bottom: 15px;">
+                    <button class="btn" onclick="previousPage()" style="padding: 10px 20px; margin: 0 5px;">◄ Prev</button>
+                    <span style="margin: 0 15px; font-weight: 600; color: #1e293b;">
+                        Halaman: <span id="pageNum"></span> / <span id="pageCount"></span>
+                    </span>
+                    <button class="btn" onclick="nextPage()" style="padding: 10px 20px; margin: 0 5px;">Next ►</button>
+                </div>
+                <div style="text-align: center; overflow: auto;">
+                    <canvas id="pdfCanvas" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 10px;"></canvas>
+                </div>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-back" onclick="backToResults()">← Kembali ke Hasil</button>
+            </div>
+        </div>
+
+        <!-- Halaman Form WhatsApp -->
+        <div class="results-page" id="waFormPage">
+            <div class="results-container" style="overflow-y: auto;">
+                <div style="background: white; padding: 20px; border-radius: 15px;">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 8px;">ID Pelanggan</label>
+                        <input type="text" id="waIdpel" readonly style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; background: #f8fafc;">
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 8px;"></label>
+                        <input type="text" id="waNama" readonly style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; background: #f8fafc;">
+                    </div>
+
+                    <div id="rowKelurahan" style="display:none;margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Kelurahan</label>
+                        <input type="text" id="waKelurahan" readonly style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; background: #f8fafc;">
+                    </div>
+
+                    <div id="rowKecamatan" style="display:none;margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Kecamatan</label>
+                        <input type="text" id="waKecamatan" readonly style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; background: #f8fafc;">
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 8px;">📍 Lokasi Saat ini</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="waLokasi" readonly placeholder="Klik tombol  lokasi ➡️➡️" style="flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; background: #f8fafc;">
+                            <button onclick="getCurrentLocation()" style="padding: 12px 20px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; white-space: nowrap;">📍 Lokasi</button>
+                        </div>
+                        <small style="color: #64748b; margin-top: 5px; display: block;">Izinkan akses lokasi saat diminta</small>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Tegangan KWH Sanxing</label>
+                        <input type="text" id="waTegangan"  inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="Contoh: 220" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px;">
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Nomor WhatsApp Pelanggan</label>
+                        <input type="tel" id="waPhone" placeholder="Contoh: 628123456789" style="width: 100%; padding: 12px; border: 2px solid #2563eb; border-radius: 10px; font-size: 16px;">
+                    </div>
+
+                    <button onclick="sendToWhatsApp()" style="width: 100%; padding: 15px; background: #25D366; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <svg width="24" height="24" viewBox="0 0 32 32" fill="white">
+                            <path d="M16 0c-8.837 0-16 7.163-16 16 0 2.825 0.737 5.607 2.137 8.048l-2.137 7.952 7.933-2.127c2.42 1.37 5.173 2.127 8.067 2.127 8.837 0 16-7.163 16-16s-7.163-16-16-16zM16 29.467c-2.482 0-4.908-0.646-7.07-1.87l-0.507-0.292-4.713 1.262 1.262-4.669-0.292-0.508c-1.207-2.100-1.847-4.507-1.847-6.957 0-7.51 6.11-13.62 13.62-13.62s13.62 6.11 13.62 13.62-6.11 13.62-13.62 13.62zM21.305 19.26c-0.346-0.174-2.049-1.007-2.366-1.123-0.316-0.117-0.547-0.174-0.776 0.174s-0.892 1.123-1.094 1.347c-0.201 0.231-0.401 0.26-0.747 0.087-0.346-0.174-1.461-0.539-2.785-1.722-1.031-0.922-1.726-2.061-1.927-2.407-0.201-0.346-0.022-0.533 0.152-0.705 0.156-0.155 0.346-0.401 0.518-0.603 0.174-0.201 0.231-0.346 0.346-0.576 0.117-0.231 0.058-0.433-0.028-0.605s-0.776-1.87-1.063-2.565c-0.28-0.672-0.56-0.58-0.776-0.591-0.201-0.008-0.431-0.010-0.661-0.010s-0.603 0.087-0.919 0.433c-0.316 0.346-1.206 1.179-1.206 2.873s1.235 3.333 1.406 3.561c0.174 0.231 2.425 3.732 5.872 5.234 0.821 0.354 1.462 0.566 1.962 0.724 0.825 0.262 1.577 0.225 2.168 0.137 0.661-0.099 2.049-0.837 2.335-1.647 0.288-0.809 0.288-1.504 0.201-1.647-0.086-0.144-0.316-0.231-0.662-0.403z"></path>
+                        </svg>
+                        Kirim ke WhatsApp
+                    </button>
+
+                    <div style="margin-top: 15px; padding: 12px; background: #dbeafe; border-radius: 10px; font-size: 13px; color: #1e40af;">
+                    </div>
+                </div>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-back" onclick="closeWhatsAppForm()">← Kembali ke Hasil</button>
+            </div>
+        </div>
     </div>
-  </div>
-  `;
-}
 
-/* ===========================
-   SEARCH
-=========================== */
-function search(q){
-  q = (q||'').trim().toLowerCase();
-  if (!q) return [];
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        let csvData = [];
+        let headers = [];
+        let pdfLinks = [
+            'https://raw.githubusercontent.com/pkejajar/sanxing/main/pdf/akt%20kol%20sanxing%20hidayat.pdf',
+            'https://raw.githubusercontent.com/mashidayat24/krn/main/pdf/KRN%20KEJAJAR.pdf'
+        ];
+        let currentResults = [];
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        let scale = window.innerWidth < 768 ? 1.0 : 1.5;
+        let currentPdfUrl = '';
+        let pdfCache = {}; // Cache for loaded PDFs
 
-  // Prioritas: IDPEL exact match
-  const exact = DB.filter(r => (r.IDPEL||'').toString().trim()===q);
-  if (exact.length) return exact;
+        function showCacheIndicator(message) {
+            const indicator = document.createElement('div');
+            indicator.className = 'cache-indicator';
+            indicator.textContent = message;
+            document.body.appendChild(indicator);
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+                setTimeout(() => indicator.remove(), 300);
+            }, 2000);
+        }
 
-  // otherwise: contains di semua kolom
-  return DB.filter(row=>{
-    return Object.values(row).some(v => (v||'').toString().toLowerCase().includes(q));
-  });
-}
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-/* ===========================
-   SAVE to Google Apps Script
-=========================== */
-async function saveToSheet({idpel, tegangan, petugas, catatan}){
-  const status = $('#saveStatus');
-  status.textContent = 'Menyimpan...';
-  status.className = 'status';
+        async function loadCSV() {
+            try {
+                const storedData = await window.storage.get('csv-data');
+                if (storedData && storedData.value) {
+                    const data = JSON.parse(storedData.value);
+                    csvData = data.csvData;
+                    headers = data.headers;
+                    showCacheIndicator('⚡ Data dimuat dari cache');
+                    return;
+                }
+                const response = await fetch('https://raw.githubusercontent.com/telwbo/gantimeterwbo/refs/heads/main/vkrn_sanxing.csv');
+                const text = await response.text();
+                parseCSV(text);
+                await window.storage.set('csv-data', JSON.stringify({ csvData, headers }));
+                showCacheIndicator('💾 Data tersimpan untuk akses cepat');
+            } catch (error) {
+                try {
+                    const response = await fetch('https://raw.githubusercontent.com/telwbo/gantimeterwbo/refs/heads/main/vkrn_sanxing.csv');
+                    const text = await response.text();
+                    parseCSV(text);
+                } catch (fetchError) { console.error('Error fetching CSV:', fetchError); }
+            }
+        }
 
-  try{
-    const body = new URLSearchParams({
-      api_key: TEGANGAN_API.api_key,
-      idpel: (idpel||'').toString().trim(),
-      tegangan: (tegangan||'').toString().trim(),
-      petugas: (petugas||'').toString().trim(),
-      catatan: (catatan||'').toString().trim()
-    });
+        function parseCSV(text) {
+            const lines = text.split('\n').filter(line => line.trim());
+            if (lines.length > 0) {
+                headers = lines[0].split(';').map(h => h.trim());
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(';').map(v => v.trim());
+                    const row = {};
+                    headers.forEach((header, index) => { row[header] = values[index] || ''; });
+                    csvData.push(row);
+                }
+            }
+        }
 
-    const res = await fetch(TEGANGAN_API.endpoint, {
-      method: 'POST',
-      headers: {'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
-      body
-    });
+        function searchData() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            if (!searchTerm) { alert('Silakan masukkan kata kunci pencarian!'); return; }
+            const results = csvData.filter(row => Object.values(row).some(value => (value || '').toLowerCase().includes(searchTerm)));
+            displayResults(results);
+        }
 
-    const json = await res.json().catch(()=>({ok:false,error:'response json error'}));
-    if (json.ok){
-      status.textContent = `✅ Tersimpan ${fmtTime(json.timestamp||Date.now())}`;
-      status.className = 'status ok';
-    } else {
-      status.textContent = `❌ Gagal: ${json.error||'unknown'}`;
-      status.className = 'status err';
-    }
-  }catch(e){
-    status.textContent = '❌ Gagal konek server';
-    status.className = 'status err';
-  }
-}
+        function displayResults(results) {
+            const searchPage = document.getElementById('searchPage');
+            const resultsPage = document.getElementById('resultsPage');
+            const resultsContainer = document.getElementById('resultsContainer');
+            currentResults = results;
+            searchPage.style.display = 'none';
+            resultsPage.style.display = 'block';
+            if (results.length === 0) { resultsContainer.innerHTML = '<div class="no-results">Tidak ada hasil yang ditemukan.</div>'; return; }
+            let html = '';
+            results.forEach((row) => {
+                html += '<div class="result-item"><div class="result-table">';
+                headers.forEach(header => {
+                    if (row[header]) {
+                        html += '<div class="result-row">';
+                        html += `<div class="result-label">${header}:</div>`;
+                        html += `<div class="result-value">${row[header]}</div>`;
+                        html += '</div>';
+                    }
+                });
+                html += '</div></div>';
+            });
+            resultsContainer.innerHTML = html;
+        }
 
-/* ===========================
-   UI HOOKS
-=========================== */
-function wireCardActions(idpel){
-  const btn = $('#btnSimpan');
-  if (!btn) return;
-  btn.addEventListener('click', ()=>{
-    const tegangan = $('#f-tegangan').value;
-    const petugas  = $('#f-petugas').value;
-    const catatan  = $('#f-catatan').value;
-    if (!tegangan){
-      $('#saveStatus').textContent = 'Masukkan tegangan';
-      $('#saveStatus').className = 'status err';
-      return;
-    }
-    saveToSheet({idpel, tegangan, petugas, catatan});
-  });
-}
+        function goBack() {
+            document.getElementById('resultsPage').style.display = 'none';
+            document.getElementById('searchPage').style.display = 'block';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchInput').focus();
+        }
 
-function showResults(list){
-  const area = $('#resultArea');
-  if (!list.length){
-    area.innerHTML = `<div class="hint" style="background:#fff;border:1px solid var(--line);padding:14px;border-radius:10px;">Tidak ditemukan data yang sesuai</div>`;
-    return;
-  }
-  // tampilkan hanya item pertama (paling relevan) untuk fokus
-  const item = list[0];
-  area.innerHTML = resultCard(item);
-  wireCardActions(item.IDPEL);
-}
+        async function viewPDF() {
+            let idpel = '';
+            if (currentResults.length > 0) {
+                const firstResult = currentResults[0];
+                for (let key in firstResult) { if (key.toLowerCase() === 'idpel') { idpel = firstResult[key]; break; } }
+            }
+            if (!idpel) { alert('ID Pelanggan tidak ditemukan dalam hasil pencarian.'); return; }
+            const resultsPage = document.getElementById('resultsPage');
+            const pdfPage = document.getElementById('pdfPage');
+            const pdfContainer = document.getElementById('pdfContainer');
+            resultsPage.style.display = 'none';
+            pdfPage.style.display = 'block';
+            pdfContainer.innerHTML = '<div class="loading">Mencari "' + idpel + '" di semua PDF...</div>';
+            try {
+                let foundPage = null; let foundPdfUrl = null;
+                for (let pdfUrl of pdfLinks) {
+                    let pdf;
+                    if (pdfCache[pdfUrl]) { pdf = pdfCache[pdfUrl]; showCacheIndicator('⚡ PDF dimuat dari cache'); }
+                    else { const loadingTask = pdfjsLib.getDocument(pdfUrl); pdf = await loadingTask.promise; pdfCache[pdfUrl] = pdf; }
+                    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+                        const page = await pdf.getPage(pageNumber);
+                        const textContent = await page.getTextContent();
+                        const text = textContent.items.map(item => item.str).join(' ');
+                        if (text.includes(idpel)) { foundPage = pageNumber; foundPdfUrl = pdfUrl; pdfDoc = pdf; break; }
+                    }
+                    if (foundPage) { currentPdfUrl = foundPdfUrl; break; }
+                }
+                if (foundPage) {
+                    const pdfName = foundPdfUrl.split('/').pop().replace(/%20/g, ' ');
+                    pdfContainer.innerHTML = `
+                        <div style="text-align: center; padding: 10px; background: #dbeafe; border-radius: 10px; margin-bottom: 10px; color: #1e40af; font-weight: 600;">
+                            📄 ${pdfName}
+                        </div>
+                        <div id="pdfControls" style="text-align: center; padding: 15px; background: #f8fafc; border-radius: 10px; margin-bottom: 15px;">
+                            <button class="btn" onclick="previousPage()" style="padding: 10px 20px; margin: 0 5px;">◄ Prev</button>
+                            <span style="margin: 0 15px; font-weight: 600; color: #1e293b;">
+                                Halaman: <span id="pageNum"></span> / <span id="pageCount"></span>
+                            </span>
+                            <button class="btn" onclick="nextPage()" style="padding: 10px 20px; margin: 0 5px;">Next ►</button>
+                        </div>
+                        <div style="text-align: center; overflow: auto;">
+                            <canvas id="pdfCanvas" style="max-width: 100%; height: auto; border: 1px solid #e2e8f0; border-radius: 10px;"></canvas>
+                        </div>`;
+                    pageNum = foundPage;
+                    document.getElementById('pageCount').textContent = pdfDoc.numPages;
+                    renderPage(pageNum);
+                } else {
+                    pdfContainer.innerHTML = '<div class="no-results">ID Pelanggan "' + idpel + '" tidak ditemukan dalam semua PDF.</div>';
+                }
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                pdfContainer.innerHTML = '<div class="no-results">Gagal memuat PDF. Silakan coba lagi.</div>';
+            }
+        }
 
-/* ===========================
-   INIT
-=========================== */
-async function init(){
-  $('#lastUpdate').textContent = 'Memuat database...';
-  try{
-    await loadAll();
-  }catch(e){
-    $('#lastUpdate').textContent = 'Gagal memuat database.';
-  }
+        function renderPage(num) {
+            pageRendering = true;
+            const canvas = document.getElementById('pdfCanvas');
+            const ctx = canvas.getContext('2d');
+            pdfDoc.getPage(num).then(function(page) {
+                const viewport = page.getViewport({scale: scale});
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                const renderContext = { canvasContext: ctx, viewport: viewport };
+                const renderTask = page.render(renderContext);
+                renderTask.promise.then(function() {
+                    pageRendering = false;
+                    if (pageNumPending !== null) { renderPage(pageNumPending); pageNumPending = null; }
+                });
+            });
+            document.getElementById('pageNum').textContent = num;
+        }
 
-  $('#btnRefresh').addEventListener('click', async ()=>{
-    $('#lastUpdate').textContent = 'Refresh database...';
-    await loadAll();
-  });
+        function queueRenderPage(num) { if (pageRendering) { pageNumPending = num; } else { renderPage(num); } }
+        function previousPage() { if (pageNum <= 1) return; pageNum--; queueRenderPage(pageNum); }
+        function nextPage() { if (pageNum >= pdfDoc.numPages) return; pageNum++; queueRenderPage(pageNum); }
+        function backToResults() { document.getElementById('pdfPage').style.display = 'none'; document.getElementById('resultsPage').style.display = 'block'; }
 
-  const doSearch = ()=>{
-    const q = $('#q').value;
-    const res = search(q);
-    showResults(res);
-  };
-  $('#btnCari').addEventListener('click', doSearch);
-  $('#q').addEventListener('keypress', (e)=>{ if(e.key==='Enter') doSearch(); });
-}
+        function openWhatsAppForm() {
+            if (currentResults.length === 0) { alert('Tidak ada data hasil pencarian.'); return; }
+            const selectedResult = currentResults.length >= 5 ? currentResults[4] : currentResults[0];
+            let idpel = '', nama = '', kelurahan = '', kecamatan = '';
+            for (let key in selectedResult) {
+                const lowerKey = key.toLowerCase();
+                if (lowerKey === 'idpel') idpel = selectedResult[key];
+                else if (lowerKey === 'nama' || lowerKey.includes('nama_pelanggan')) nama = selectedResult[key];
+                else if (lowerKey === 'nama_kelurahan' || lowerKey.includes('kelurahan')) kelurahan = selectedResult[key];
+                else if (lowerKey === 'nama_kecamatan' || lowerKey.includes('kecamatan')) kecamatan = selectedResult[key];
+            }
+            document.getElementById('waIdpel').value = idpel || '';
+            document.getElementById('waNama').value = nama || '';
+            document.getElementById('waKelurahan').value = kelurahan || '';
+            document.getElementById('waKecamatan').value = kecamatan || '';
+            document.getElementById('waLokasi').value = '';
+            document.getElementById('waPhone').value = '';
+            document.getElementById('resultsPage').style.display = 'none';
+            document.getElementById('waFormPage').style.display = 'block';
+        }
 
-document.addEventListener('DOMContentLoaded', init);
-</script>
+        function getCurrentLocation() {
+            const lokasiInput = document.getElementById('waLokasi');
+            if (!navigator.geolocation) { alert('Geolocation tidak didukung di browser ini.'); return; }
+            lokasiInput.value = 'Mendapatkan lokasi...';
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude.toFixed(6);
+                    const lon = position.coords.longitude.toFixed(6);
+                    const accuracy = position.coords.accuracy.toFixed(0);
+                    lokasiInput.value = `${lat}, ${lon} (±${accuracy}m)`;
+                },
+                function(error) {
+                    let errorMsg = '';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED: errorMsg = 'Izin lokasi ditolak'; break;
+                        case error.POSITION_UNAVAILABLE: errorMsg = 'Lokasi tidak tersedia'; break;
+                        case error.TIMEOUT: errorMsg = 'Timeout'; break;
+                        default: errorMsg = 'Error mendapatkan lokasi';
+                    }
+                    lokasiInput.value = errorMsg;
+                    alert('Gagal mendapatkan lokasi: ' + errorMsg);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
+
+        function closeWhatsAppForm() {
+            document.getElementById('waFormPage').style.display = 'none';
+            document.getElementById('resultsPage').style.display = 'block';
+        }
+
+        
+        async function sendToWhatsApp() {
+            try {
+                const idpel = (document.getElementById('waIdpel')?.value || '').trim();
+                const nama = (document.getElementById('waNama')?.value || '').trim();
+                const kelurahan = (document.getElementById('waKelurahan')?.value || '').trim();
+                const kecamatan = (document.getElementById('waKecamatan')?.value || '').trim();
+                const lokasi = (document.getElementById('waLokasi')?.value || '').trim();
+                const tegangan = (document.getElementById('waTegangan')?.value || '').trim();
+
+                if (!lokasi) { alert('Silakan dapatkan lokasi perangkat terlebih dahulu!'); return; }
+
+                const message =
+`*LAPORAN PEMASANGAN* 
+*VKRN KWH SANXING*
+
+Nama :  ${nama || '-'}
+IDPEL :  ${idpel || '-'}
+Kelurahan :  ${kelurahan || '-'}
+Kecamatan :  ${kecamatan || '-'}
+Tegangan kwh sanxing :  ${tegangan} V
+Lokasi Pemasangan : 
+${lokasi}`;
+
+                try { await navigator.clipboard.writeText(message); } catch (_) {}
+
+                const encoded = encodeURIComponent(message);
+                const url = `https://api.whatsapp.com/send?text=${encoded}`;
+
+                const opened = window.open(url, '_blank');
+                if (!opened) { window.location.href = url; }
+            } catch (err) {
+                console.error('sendToWhatsApp error:', err);
+                alert('Terjadi kesalahan saat menyiapkan pengiriman WhatsApp. Silakan coba lagi.');
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') { searchData(); }
+        });
+
+        window.onload = function() { loadCSV(); };
+    </script>
 </body>
 </html>
